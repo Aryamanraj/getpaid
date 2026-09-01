@@ -51,7 +51,10 @@ export default async function HomePage() {
           </li>
           <li>
             Free to use.{' '}
-            <Link href="https://github.com/Aryamanraj/getpaid" className="underline">
+            <Link
+              href="https://github.com/Aryamanraj/getpaid"
+              className="underline"
+            >
               Source-available.
             </Link>
           </li>
