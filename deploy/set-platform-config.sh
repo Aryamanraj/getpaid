@@ -6,17 +6,11 @@
 #
 # Blank input skips a key. Safe to re-run any time — set is an upsert.
 # JWT secrets are not asked for: the API generates them itself on first boot.
+#
+# Paste-safe: the whole flow lives in main(), invoked on the last line, so the
+# shell parses everything before the first prompt runs; input comes from
+# /dev/tty so prompts never consume queued paste or piped stdin.
 set -euo pipefail
-
-API_DEFAULT='https://api.payee.id/api/v1'
-read -r -p "API base URL [$API_DEFAULT]: " API
-API=${API:-$API_DEFAULT}
-
-read -r -s -p 'ADMIN_API_KEY (hidden): ' ADMIN_API_KEY
-echo
-[[ -n $ADMIN_API_KEY ]] || { echo 'ADMIN_API_KEY is required' >&2; exit 1; }
-
-FAILED=0
 
 json_escape() {
   local s=${1//\\/\\\\}
@@ -42,10 +36,10 @@ put() { # key, json-value
 ask_string() { # key, prompt, hidden?
   local key=$1 prompt=$2 hidden=${3:-hidden} raw
   if [[ $hidden == hidden ]]; then
-    read -r -s -p "$prompt (hidden, blank to skip): " raw
+    read -r -s -p "$prompt (hidden, blank to skip): " raw </dev/tty
     echo
   else
-    read -r -p "$prompt (blank to skip): " raw
+    read -r -p "$prompt (blank to skip): " raw </dev/tty
   fi
   [[ -z $raw ]] && { echo "  skipped $key"; return; }
   put "$key" "\"$(json_escape "$raw")\""
@@ -53,7 +47,7 @@ ask_string() { # key, prompt, hidden?
 
 ask_url_array() { # key, prompt — ordered fallback list, first is primary
   local key=$1 raw p joined=''
-  read -r -s -p "$2 — URL or comma-separated URLs (hidden, blank to skip): " raw
+  read -r -s -p "$2 — URL or comma-separated URLs (hidden, blank to skip): " raw </dev/tty
   echo
   [[ -z $raw ]] && { echo "  skipped $key"; return; }
   local IFS=','
@@ -66,27 +60,41 @@ ask_url_array() { # key, prompt — ordered fallback list, first is primary
   put "$key" "[$joined]"
 }
 
-echo
-echo '── chain RPC endpoints (with your API keys in the URL) ──'
-ask_url_array 'chain.eip155.1.rpcUrls' 'Ethereum mainnet RPC'
-ask_url_array 'chain.eip155.8453.rpcUrls' 'Base RPC'
-ask_url_array 'chain.eip155.42161.rpcUrls' 'Arbitrum One RPC'
-ask_url_array 'chain.eip155.137.rpcUrls' 'Polygon RPC'
-ask_url_array 'chain.solana.mainnet.rpcUrls' 'Solana mainnet RPC'
-ask_string 'chain.tron.apiKey' 'TronGrid API key'
+main() {
+  local API_DEFAULT='https://api.payee.id/api/v1'
+  read -r -p "API base URL [$API_DEFAULT]: " API </dev/tty
+  API=${API:-$API_DEFAULT}
 
-echo
-echo '── mail (Novu Cloud) ──'
-ask_string 'mail.novu.apiKey' 'Novu secret key'
+  read -r -s -p 'ADMIN_API_KEY (hidden): ' ADMIN_API_KEY </dev/tty
+  echo
+  [[ -n $ADMIN_API_KEY ]] || { echo 'ADMIN_API_KEY is required' >&2; exit 1; }
 
-echo
-echo '── web (public by design — shown while typing) ──'
-ask_string 'web.walletconnectProjectId' 'WalletConnect project ID' visible
-ask_string 'web.solanaRpcUrl' 'Browser Solana RPC URL' visible
+  FAILED=0
 
-echo
-if [[ $FAILED == 1 ]]; then
-  echo 'Some keys failed — fix and re-run; successful keys need no re-entry.' >&2
-  exit 1
-fi
-echo 'Done. Values are AES-encrypted at rest and cannot be read back.'
+  echo
+  echo '── chain RPC endpoints (with your API keys in the URL) ──'
+  ask_url_array 'chain.eip155.1.rpcUrls' 'Ethereum mainnet RPC'
+  ask_url_array 'chain.eip155.8453.rpcUrls' 'Base RPC'
+  ask_url_array 'chain.eip155.42161.rpcUrls' 'Arbitrum One RPC'
+  ask_url_array 'chain.eip155.137.rpcUrls' 'Polygon RPC'
+  ask_url_array 'chain.solana.mainnet.rpcUrls' 'Solana mainnet RPC'
+  ask_string 'chain.tron.apiKey' 'TronGrid API key'
+
+  echo
+  echo '── mail (Novu Cloud) ──'
+  ask_string 'mail.novu.apiKey' 'Novu secret key'
+
+  echo
+  echo '── web (public by design — shown while typing) ──'
+  ask_string 'web.walletconnectProjectId' 'WalletConnect project ID' visible
+  ask_string 'web.solanaRpcUrl' 'Browser Solana RPC URL' visible
+
+  echo
+  if [[ $FAILED == 1 ]]; then
+    echo 'Some keys failed — fix and re-run; successful keys need no re-entry.' >&2
+    exit 1
+  fi
+  echo 'Done. Values are AES-encrypted at rest and cannot be read back.'
+}
+
+main
