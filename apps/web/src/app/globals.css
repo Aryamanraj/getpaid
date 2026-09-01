@@ -172,6 +172,17 @@ a {
   animation: draw 0.5s var(--ease-out-soft) 0.15s forwards;
 }
 
+/* Whisper-subtle dot grid, derived from the theme foreground so it adapts
+ * to any domain palette and to dark mode. Fades out toward the bottom. */
+.bg-dots {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-foreground) 7%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 95%);
+}
+
 /* Interactive lift, used by cards and the primary button. */
 .lift {
   transition:

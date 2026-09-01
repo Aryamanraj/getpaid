@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { checkUserNameShape, normaliseUserName } from '@recv/shared';
 import { api } from '@/lib/api';
 import { useIsAuthed } from '@/lib/use-auth';
-import { Button, ErrorText } from '@/components/ui';
+import { ErrorText } from '@/components/ui';
 
 export const PENDING_CLAIM_KEY = 'recv.pendingClaim';
 
@@ -17,8 +17,8 @@ function AvailabilityIcon({
   if (state === 'checking') {
     return (
       <svg
-        width="16"
-        height="16"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"
@@ -44,8 +44,8 @@ function AvailabilityIcon({
   if (state === 'free') {
     return (
       <svg
-        width="16"
-        height="16"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"
@@ -65,8 +65,8 @@ function AvailabilityIcon({
   if (state === 'taken') {
     return (
       <svg
-        width="16"
-        height="16"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"
@@ -164,31 +164,33 @@ export function ClaimForm({ host }: { host: string }) {
     }
   }
 
-  const hint = !name
-    ? null
-    : !shape.valid
-      ? shape.reason
-      : checking
-        ? 'Checking…'
-        : availability
-          ? availability.available
-            ? `${name}.${host} is available`
-            : availability.reason
-          : null;
+  // The line under the field is the live link preview; it turns into the
+  // reason when the name is malformed or taken.
+  const preview = !name ? (
+    <>Type a name — your link appears here.</>
+  ) : !shape.valid ? (
+    shape.reason
+  ) : availability && !availability.available && !checking ? (
+    availability.reason
+  ) : (
+    <span className="font-mono">
+      https://{name}.{host}
+    </span>
+  );
 
   return (
     <form
-      className="flex flex-col gap-3"
+      className="mx-auto w-full max-w-xl"
       onSubmit={(event) => {
         event.preventDefault();
         if (canClaim) claim();
       }}
     >
-      <label htmlFor="username" className="text-sm font-medium">
+      <label htmlFor="username" className="sr-only">
         Claim your link
       </label>
 
-      <div className="flex min-h-14 items-center rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] transition-[border-color,box-shadow] duration-200 hover:border-[color:var(--color-border-strong)] focus-within:border-[color:var(--color-accent)] focus-within:[box-shadow:0_0_0_3px_var(--color-accent-ring)]">
+      <div className="flex h-14 items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-background)] pr-1.5 pl-5 [box-shadow:var(--shadow-md)] transition-[border-color,box-shadow] duration-200 focus-within:border-[color:var(--color-accent)] focus-within:[box-shadow:var(--shadow-md),0_0_0_3px_var(--color-accent-ring)] hover:border-[color:var(--color-border-strong)] sm:h-16 sm:pl-6">
         <input
           id="username"
           name="username"
@@ -199,16 +201,69 @@ export function ClaimForm({ host }: { host: string }) {
           value={value}
           onChange={(event) => setValue(event.target.value)}
           aria-describedby="username-hint"
-          className="min-w-0 flex-1 bg-transparent px-4 py-3.5 text-lg outline-none"
+          className="min-w-0 flex-1 bg-transparent text-lg outline-none sm:text-xl"
         />
-        <span className="flex shrink-0 items-center gap-2.5 pr-4">
-          <span className="text-[color:var(--color-muted)]">.{host}</span>
+        <span className="hidden shrink-0 text-lg text-[color:var(--color-muted)] sm:block sm:text-xl">
+          .{host}
+        </span>
+        <span className="grid w-6 shrink-0 place-items-center">
           <AvailabilityIcon state={iconState} />
         </span>
+        <button
+          type="submit"
+          disabled={!canClaim || submitting}
+          aria-label={
+            authed ? 'Claim your link' : 'Claim your link — sign in to continue'
+          }
+          className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] transition-[opacity,transform,box-shadow] duration-200 [transition-timing-function:var(--ease-out-soft)] hover:[box-shadow:var(--shadow-md)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-25 disabled:active:scale-100 sm:h-13 sm:w-13"
+        >
+          {submitting ? (
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+              className="animate-spin"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                strokeWidth="2"
+                opacity="0.25"
+              />
+              <path
+                d="M21 12a9 9 0 0 0-9-9"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          ) : (
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 12h15m-6-7l7 7-7 7"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </button>
       </div>
 
       <p
-        className={`min-h-5 text-sm transition-colors duration-200 ${
+        id="username-hint"
+        className={`mt-3 min-h-5 text-sm transition-colors duration-200 ${
           iconState === 'free'
             ? 'text-[color:var(--color-success)]'
             : iconState === 'taken'
@@ -216,21 +271,9 @@ export function ClaimForm({ host }: { host: string }) {
               : 'text-[color:var(--color-muted)]'
         }`}
       >
-        <span id="username-hint">{hint}</span>
+        {preview}
       </p>
       <ErrorText>{error}</ErrorText>
-
-      <Button
-        type="submit"
-        disabled={!canClaim || submitting}
-        className="lift min-h-12 text-base"
-      >
-        {submitting
-          ? 'Claiming…'
-          : authed
-            ? 'Claim'
-            : 'Claim — sign in to continue'}
-      </Button>
     </form>
   );
 }
