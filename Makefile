@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 .PHONY: help install redis-up redis-down build shared api web dev-api dev-web \
         migrate migrate-rollback aes-key check test lint format clean \
-        dev-db-up prod-up prod-migrate prod-logs
+        dev-db-up prod-up prod-migrate prod-logs deploy-nginx logs-nginx
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -29,6 +29,12 @@ prod-migrate: ## Run migrations + seeds inside the production api container
 
 prod-logs: ## Tail production logs
 	docker compose -f docker-compose.prod.yml --env-file deploy/.env.prod logs -f --tail=100
+
+deploy-nginx: ## Deploy the nginx-fronted stack: build, migrate, start, health-check
+	bash deploy/deploy.sh
+
+logs-nginx: ## Tail logs of the nginx-fronted stack
+	docker compose -f docker-compose.prod.yml -f deploy/docker-compose.nginx.yml --env-file deploy/.env.prod logs -f --tail=100
 
 shared: ## Build the shared package
 	yarn shared build

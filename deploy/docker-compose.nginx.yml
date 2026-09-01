@@ -1,0 +1,17 @@
+# Override for running behind host nginx instead of the bundled Caddy.
+# Binds web/api to loopback for nginx to proxy; start only web api redis so
+# the caddy service never comes up:
+#
+#   docker compose -f docker-compose.prod.yml -f deploy/docker-compose.nginx.yml \
+#     --env-file deploy/.env.prod up -d --build web api redis
+#
+# nginx site configs live in deploy/nginx/. ACME_EMAIL and CLOUDFLARE_API_TOKEN
+# in deploy/.env.prod are Caddy-only and can stay blank.
+
+services:
+  web:
+    ports:
+      - '127.0.0.1:3000:3000'
+  api:
+    ports:
+      - '127.0.0.1:3001:3001'

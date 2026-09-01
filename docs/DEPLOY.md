@@ -133,8 +133,76 @@ docker compose -f docker-compose.prod.yml exec api node dist/src/db/migrate
 The API refuses to start if there are unapplied migrations (rule M10), so a
 missed migrate step fails loudly rather than corrupting anything.
 
+On the nginx stack (§10), pushes to `main` do this automatically (§11);
+`make deploy-nginx` is the manual equivalent.
+
 ## 9. Backups
 
 Supabase handles Postgres. The two things only you hold are
 `apps/api/env/.env.production` (the AES key) and `deploy/.env.prod`.
 Redis is a cache and a queue of retryable jobs; it needs no backup.
+
+## 10. Alternative: host nginx instead of Caddy
+
+If the server already runs nginx, skip the bundled Caddy and terminate TLS
+with Cloudflare Origin Certificates instead. Same DNS records as §1, both
+proxied (orange cloud), SSL/TLS mode **Full (strict)**.
+
+Per domain:
+
+1. In Cloudflare, generate an Origin Certificate for `<domain>, *.<domain>`
+   (the wildcard hostname is required — every username lives on it). Save as
+   `/etc/ssl/cloudflare/<domain>.pem` and `/etc/ssl/cloudflare/<domain>.key`.
+2. Copy the matching site config from `deploy/nginx/` into
+   `/etc/nginx/sites-available/`, symlink into `sites-enabled/`, then
+   `sudo nginx -t && sudo systemctl reload nginx`. The config routes
+   `api.<domain>` to the API on `127.0.0.1:3001` and everything else to the
+   web app on `127.0.0.1:3000` — the app-level Host-header rewrite does the
+   per-username routing, so no per-user nginx or DNS entries exist.
+
+Start the stack with the override that binds both apps to loopback, naming
+the services so `caddy` never starts:
+
+```bash
+docker compose -f docker-compose.prod.yml -f deploy/docker-compose.nginx.yml \
+  --env-file deploy/.env.prod up -d --build web api redis
+```
+
+`ACME_EMAIL` and `CLOUDFLARE_API_TOKEN` in `deploy/.env.prod` are Caddy-only;
+leave them blank. Everything else in this document is unchanged. Adding a
+domain later is §7 with step 3 swapped for: new origin cert + copy a
+`deploy/nginx/` config with the hostname changed.
+
+Behind Cloudflare, `$remote_addr` in nginx logs is a Cloudflare edge IP. If
+accurate client IPs matter, configure the `real_ip` module with Cloudflare's
+published ranges and `CF-Connecting-IP`.
+
+## 11. CI/CD (GitHub Actions)
+
+`.github/workflows/deploy.yml` deploys the nginx stack on every push to
+`main` (or manually via *Run workflow*): lint, typecheck, and tests gate the
+deploy; then it SSHes to the server, hard-resets the clone to `origin/main`,
+and runs `deploy/deploy.sh` — build images, run migrations against the new
+image (§8's rule M10 makes migrate-before-swap the safe order), swap
+containers, and poll `/api/v1/health` until healthy, dumping API logs on
+failure.
+
+One-time setup:
+
+1. Do the first deploy by hand: clone the repo on the server, complete
+   §§1–6 and §10.
+2. Create a deploy SSH key; the user must be able to run `docker`:
+
+   ```bash
+   ssh-keygen -t ed25519 -f deploy_key -N '' -C getpaid-deploy
+   # append deploy_key.pub to ~/.ssh/authorized_keys on the server
+   ```
+
+3. In the GitHub repo, add secrets: `DEPLOY_HOST`, `DEPLOY_USER`,
+   `DEPLOY_SSH_KEY` (the private key), `DEPLOY_PATH` (absolute path of the
+   clone), and optionally `DEPLOY_PORT`.
+
+The workflow never sees application secrets — env files stay on the server
+and are untouched by the hard reset (they are gitignored). nginx config
+changes are the one thing CI does not apply: after pulling, copy from
+`deploy/nginx/` and reload nginx yourself.
