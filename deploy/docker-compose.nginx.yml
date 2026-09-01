@@ -15,3 +15,14 @@ services:
   api:
     ports:
       - '127.0.0.1:3001:3001'
+
+# Dual-stack network so containers can reach IPv6-only endpoints — Supabase's
+# direct connection host has no A record on the free tier. ULA subnet; Docker
+# 27+ NATs it out through the host's IPv6 (ip6tables is on by default).
+# Requires working IPv6 on the host: `curl -6 ifconfig.co` must answer.
+networks:
+  default:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd42:5ca1:e3ef::/64
