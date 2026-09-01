@@ -6,7 +6,7 @@ FSL-1.1-ALv2
 
 ## Notice
 
-Copyright 2026 <LICENSOR NAME — fill this in>
+Copyright 2026 Aryamanraj
 
 ## Terms and Conditions
 
