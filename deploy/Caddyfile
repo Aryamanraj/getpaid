@@ -1,0 +1,58 @@
+# One Caddy in front of both apps, for every domain in core.Domains.
+#
+# Wildcard certificates are obtained over DNS-01 through Cloudflare, so a new
+# domain needs a new block here plus a DNS record — nothing else. The token
+# needs Zone:DNS:Edit on the zones listed and nothing more.
+#
+# Build Caddy with the Cloudflare plugin:
+#   xcaddy build --with github.com/caddy-dns/cloudflare
+# or use the image in docker-compose.prod.yml, which does that for you.
+
+{
+  email {$ACME_EMAIL}
+}
+
+(app) {
+  encode zstd gzip
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+    -Server
+  }
+  reverse_proxy web:3000
+}
+
+(api) {
+  encode zstd gzip
+  header -Server
+  reverse_proxy api:3001
+}
+
+# ── payee.id ────────────────────────────────────────────────────────────────
+payee.id, *.payee.id {
+  tls {
+    dns cloudflare {$CLOUDFLARE_API_TOKEN}
+  }
+  @api host api.payee.id
+  handle @api {
+    import api
+  }
+  handle {
+    import app
+  }
+}
+
+# ── recv.to ─────────────────────────────────────────────────────────────────
+recv.to, *.recv.to {
+  tls {
+    dns cloudflare {$CLOUDFLARE_API_TOKEN}
+  }
+  @api host api.recv.to
+  handle @api {
+    import api
+  }
+  handle {
+    import app
+  }
+}
