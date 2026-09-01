@@ -21,11 +21,11 @@ export const Button = forwardRef<
       ref={ref}
       {...props}
       className={cx(
-        'inline-flex min-h-11 items-center justify-center rounded-[var(--radius)] px-4 py-2.5 text-[15px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40',
+        'inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius)] px-4 py-2.5 text-[15px] font-medium transition-[background-color,border-color,box-shadow,transform,opacity] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100',
         variant === 'primary' &&
-          'bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] hover:opacity-90',
+          'bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)] hover:[box-shadow:var(--shadow-md)] hover:opacity-90',
         variant === 'ghost' &&
-          'border border-[color:var(--color-border)] bg-transparent hover:bg-[color:var(--color-surface)]',
+          'border border-[color:var(--color-border)] bg-transparent hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]',
         className,
       )}
     />
@@ -41,7 +41,7 @@ export const Input = forwardRef<
       ref={ref}
       {...props}
       className={cx(
-        'min-h-11 w-full rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-2.5 text-[16px] outline-none transition-colors duration-200 focus:border-[color:var(--color-accent)]',
+        'min-h-11 w-full rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-2.5 text-[16px] outline-none transition-[border-color,box-shadow] duration-200 hover:border-[color:var(--color-border-strong)] focus:border-[color:var(--color-accent)] focus:[box-shadow:0_0_0_3px_var(--color-accent-ring)]',
         className,
       )}
     />
@@ -65,14 +65,17 @@ export function Label({
 export function Card({
   children,
   className,
+  elevated,
 }: {
   children: ReactNode;
   className?: string;
+  elevated?: boolean;
 }) {
   return (
     <div
       className={cx(
-        'rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4',
+        'rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5',
+        elevated && '[box-shadow:var(--shadow-md)]',
         className,
       )}
     >
@@ -116,6 +119,38 @@ export function Mono({
   );
 }
 
+function CopyIcon({ done }: { done: boolean }) {
+  return done ? (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M5 13l4 4L19 7"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="check-draw"
+      />
+    </svg>
+  ) : (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect
+        x="9"
+        y="9"
+        width="11"
+        height="11"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
 export function CopyButton({
   value,
   label = 'Copy',
@@ -134,7 +169,10 @@ export function CopyButton({
       type="button"
       variant="ghost"
       aria-label={`${label} to clipboard`}
-      className="min-h-9 px-3 py-1.5 text-sm"
+      className={cx(
+        'min-h-9 px-3 py-1.5 text-sm',
+        copied && 'text-[color:var(--color-success)]',
+      )}
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(value);
@@ -142,6 +180,7 @@ export function CopyButton({
         } catch {}
       }}
     >
+      <CopyIcon done={copied} />
       {copied ? 'Copied' : label}
     </Button>
   );

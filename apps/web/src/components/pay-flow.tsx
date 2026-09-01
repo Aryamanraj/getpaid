@@ -146,10 +146,10 @@ function RequestForm({
                     type="button"
                     aria-pressed={on}
                     onClick={() => setSelected(a)}
-                    className={`min-h-10 rounded-full border px-3.5 text-sm transition-colors duration-200 ${
+                    className={`min-h-10 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
                       on
-                        ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)]'
-                        : 'border-[color:var(--color-border)] hover:bg-[color:var(--color-surface)]'
+                        ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
+                        : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
                     }`}
                   >
                     {a.asset.symbol}
@@ -172,7 +172,7 @@ function RequestForm({
           placeholder="0.00"
           value={amount}
           onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
-          className="text-2xl font-medium"
+          className="tabular min-h-14 text-3xl font-semibold tracking-tight"
           aria-describedby="amount-hint"
         />
         <Muted className="mt-1.5">
@@ -206,7 +206,11 @@ function RequestForm({
       </div>
 
       <ErrorText>{error}</ErrorText>
-      <Button type="submit" disabled={!amountOk || !selected || busy}>
+      <Button
+        type="submit"
+        disabled={!amountOk || !selected || busy}
+        className="lift min-h-12 text-base"
+      >
         {busy ? 'One moment…' : 'Continue'}
       </Button>
       <Muted className="text-center">
@@ -252,12 +256,14 @@ function PayPanel({
 
   return (
     <div className="mt-8 flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-3">
+      <div className="reveal flex items-start justify-between gap-3">
         <div>
           <Muted>Send exactly</Muted>
-          <p className="text-3xl font-semibold tracking-tight">
+          <p className="tabular text-4xl font-semibold tracking-tight">
             {request.amountDisplay}{' '}
-            <span className="text-xl font-medium">{request.asset.symbol}</span>
+            <span className="text-xl font-medium text-[color:var(--color-muted)]">
+              {request.asset.symbol}
+            </span>
           </p>
           <Muted>on {request.chain.name}</Muted>
         </div>
@@ -266,12 +272,17 @@ function PayPanel({
 
       {awaiting ? (
         <>
-          <WalletPayButton
-            request={request}
-            onSent={(h) => submit(h, 'wallet')}
-          />
+          <div className="reveal reveal-1">
+            <WalletPayButton
+              request={request}
+              onSent={(h) => submit(h, 'wallet')}
+            />
+          </div>
 
-          <Card className="flex flex-col items-center gap-3">
+          <Card
+            elevated
+            className="reveal reveal-2 flex flex-col items-center gap-3"
+          >
             {/* Tron wallets handle URIs inconsistently; the address alone is safer. */}
             <Qr
               value={isTron ? request.toAddress : request.paymentUri}
@@ -282,20 +293,20 @@ function PayPanel({
                 To this address on {request.chain.name}
               </Muted>
               <div className="flex items-start justify-between gap-2">
-                <Mono className="text-sm">{request.toAddress}</Mono>
+                <Mono className="tabular text-sm">{request.toAddress}</Mono>
                 <CopyButton value={request.toAddress} />
               </div>
             </div>
             <div className="flex w-full items-center justify-between">
               <Muted>Amount</Muted>
               <div className="flex items-center gap-2">
-                <Mono className="text-sm">{request.amountDisplay}</Mono>
+                <Mono className="tabular text-sm">{request.amountDisplay}</Mono>
                 <CopyButton value={request.amountDisplay} />
               </div>
             </div>
           </Card>
 
-          <Card>
+          <Card className="reveal reveal-3">
             {showManual ? (
               <form
                 className="flex flex-col gap-2"

@@ -38,11 +38,12 @@ export function StatusBadge({
 }: {
   status: PaymentRequestView['status'];
 }) {
+  const live = status === 'pending' || status === 'submitted';
   const tone =
     status === 'confirmed'
-      ? 'text-[color:var(--color-success)] border-[color:var(--color-success)]'
+      ? 'text-[color:var(--color-success)] border-[color:var(--color-success)] bg-[color:var(--color-success-soft)]'
       : status === 'failed' || status === 'expired'
-        ? 'text-[color:var(--color-danger)] border-[color:var(--color-danger)]'
+        ? 'text-[color:var(--color-danger)] border-[color:var(--color-danger)] bg-[color:var(--color-danger-soft)]'
         : 'text-[color:var(--color-muted)] border-[color:var(--color-border)]';
   const label =
     status === 'submitted'
@@ -50,8 +51,12 @@ export function StatusBadge({
       : status.charAt(0).toUpperCase() + status.slice(1);
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${tone}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${tone}`}
     >
+      <span
+        aria-hidden="true"
+        className={`h-1.5 w-1.5 rounded-full bg-current ${live ? 'status-dot-live' : ''}`}
+      />
       {label}
     </span>
   );
@@ -72,23 +77,25 @@ export function TransactionDetails({
           href={tx.explorerUrl}
           target="_blank"
           rel="noreferrer"
-          className="underline"
+          className="underline underline-offset-2 transition-colors duration-200 hover:text-[color:var(--color-muted)]"
         >
-          <Mono>{shortAddress(tx.txHash, 10, 8)}</Mono>
+          <Mono className="tabular">{shortAddress(tx.txHash, 10, 8)}</Mono>
         </a>
       </dd>
       {tx.fromAddress ? (
         <>
           <dt className="text-[color:var(--color-muted)]">From</dt>
           <dd>
-            <Mono>{shortAddress(tx.fromAddress, 8, 6)}</Mono>
+            <Mono className="tabular">
+              {shortAddress(tx.fromAddress, 8, 6)}
+            </Mono>
           </dd>
         </>
       ) : null}
       {tx.status === 'pending' ? (
         <>
           <dt className="text-[color:var(--color-muted)]">Confirmations</dt>
-          <dd className="flex items-center gap-2">
+          <dd className="tabular flex items-center gap-2">
             {tx.confirmations} / {tx.requiredConfirmations}
             <Spinner label="" />
           </dd>
@@ -124,9 +131,33 @@ export function StatusHint({ request }: { request: PaymentRequestView }) {
       );
     case 'confirmed':
       return (
-        <Muted className="text-[color:var(--color-success)]">
+        <p className="flex items-center gap-2 text-sm font-medium text-[color:var(--color-success)]">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              opacity="0.35"
+            />
+            <path
+              d="M7.5 12.5l3 3 6-7"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="check-draw"
+            />
+          </svg>
           Paid and verified on-chain.
-        </Muted>
+        </p>
       );
     case 'failed':
       return (

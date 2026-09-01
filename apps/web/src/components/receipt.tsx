@@ -21,11 +21,14 @@ export function Receipt({
 
   return (
     <>
-      <div className="mt-6 flex items-start justify-between gap-3">
+      <div className="reveal mt-6 flex items-start justify-between gap-3">
         <div>
           <Muted>Receipt · {brandName}</Muted>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {request.amountDisplay} {request.asset.symbol}
+          <h1 className="tabular text-3xl font-semibold tracking-tight">
+            {request.amountDisplay}{' '}
+            <span className="text-xl font-medium text-[color:var(--color-muted)]">
+              {request.asset.symbol}
+            </span>
           </h1>
           <Muted>
             on {request.chain.name} to{' '}
@@ -35,7 +38,7 @@ export function Receipt({
         <StatusBadge status={request.status} />
       </div>
 
-      <Card className="mt-6">
+      <Card elevated className="reveal reveal-1 mt-6">
         <StatusHint request={request} />
         <TransactionDetails request={request} />
         <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-[color:var(--color-border)] pt-3 text-sm">

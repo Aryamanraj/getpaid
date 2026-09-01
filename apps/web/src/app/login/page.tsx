@@ -64,16 +64,21 @@ function LoginInner() {
 
   return (
     <Page>
-      <Link href="/" className="text-sm text-[color:var(--color-muted)]">
+      <Link
+        href="/"
+        className="text-sm text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
+      >
         ← Back
       </Link>
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight">Sign in</h1>
-      <Muted className="mt-1">
-        No password. A code by email, or a wallet signature.
-      </Muted>
+      <header className="reveal">
+        <h1 className="mt-6 text-3xl font-semibold tracking-tight">Sign in</h1>
+        <Muted className="mt-1.5">
+          No password. A code by email, or a wallet signature.
+        </Muted>
+      </header>
 
       <form
-        className="mt-8 flex flex-col gap-3"
+        className="reveal reveal-1 mt-8 flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
           sent ? verify() : requestCode();
@@ -103,7 +108,7 @@ function LoginInner() {
               autoFocus
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              className="font-mono tracking-[0.3em]"
+              className="tabular text-center font-mono text-2xl tracking-[0.4em]"
             />
           </div>
         ) : null}
@@ -128,13 +133,15 @@ function LoginInner() {
         ) : null}
       </form>
 
-      <div className="my-8 flex items-center gap-3 text-xs text-[color:var(--color-muted)]">
+      <div className="reveal reveal-2 my-8 flex items-center gap-3 text-xs text-[color:var(--color-muted)]">
         <span className="h-px flex-1 bg-[color:var(--color-border)]" />
         or
         <span className="h-px flex-1 bg-[color:var(--color-border)]" />
       </div>
 
-      <WalletSignIn onSuccess={finish} />
+      <div className="reveal reveal-3">
+        <WalletSignIn onSuccess={finish} />
+      </div>
     </Page>
   );
 }

@@ -71,7 +71,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-12 sm:px-6 sm:py-16">
-      <header className="flex items-center gap-4">
+      <header className="reveal flex items-center gap-4">
         {profile.avatarUrl ? (
           // biome-ignore lint/performance/noImgElement: user-supplied remote URL
           <img
@@ -79,12 +79,12 @@ export default async function ProfilePage({ params }: PageProps) {
             alt=""
             width={56}
             height={56}
-            className="h-14 w-14 rounded-full object-cover"
+            className="h-14 w-14 rounded-full border border-[color:var(--color-border)] object-cover [box-shadow:var(--shadow-sm)]"
           />
         ) : (
           <div
             aria-hidden="true"
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--color-surface)] text-xl font-medium"
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xl font-medium [box-shadow:var(--shadow-sm)]"
           >
             {name.charAt(0).toUpperCase()}
           </div>

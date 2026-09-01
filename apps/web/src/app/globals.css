@@ -4,6 +4,10 @@
  * Light defaults. Every colour here is overridden at request time by the
  * domain's ThemeConfig (lib/theme.ts), so this block is the fallback for a
  * domain that sets nothing — never the source of truth.
+ *
+ * Derived tokens (soft/tint/shadow) are computed with color-mix from the
+ * base tokens, so they follow whatever theme the domain row sets — no
+ * component ever holds a raw brand colour.
  */
 :root {
   --color-background: #ffffff;
@@ -34,6 +38,39 @@
   }
 }
 
+:root {
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  --color-accent-ring: color-mix(
+    in srgb,
+    var(--color-accent) 24%,
+    transparent
+  );
+  --color-border-strong: color-mix(
+    in srgb,
+    var(--color-border) 55%,
+    var(--color-muted)
+  );
+  --color-success-soft: color-mix(
+    in srgb,
+    var(--color-success) 10%,
+    transparent
+  );
+  --color-danger-soft: color-mix(
+    in srgb,
+    var(--color-danger) 10%,
+    transparent
+  );
+  --shadow-color: color-mix(in srgb, var(--color-foreground) 7%, transparent);
+  --shadow-sm: 0 1px 2px var(--shadow-color);
+  --shadow-md:
+    0 1px 2px var(--shadow-color),
+    0 4px 12px -2px var(--shadow-color);
+  --shadow-lift:
+    0 2px 4px var(--shadow-color),
+    0 12px 24px -6px var(--shadow-color);
+  --ease-out-soft: cubic-bezier(0.22, 0.68, 0.32, 1);
+}
+
 @theme inline {
   --color-background: var(--color-background);
   --color-surface: var(--color-surface);
@@ -58,6 +95,12 @@ body {
   -webkit-font-smoothing: antialiased;
   font-size: 16px;
   line-height: 1.5;
+  font-feature-settings: 'cv05', 'ss01';
+}
+
+/* Amounts, addresses, codes: digits that line up. */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Visible focus for keyboard users on every interactive element. */
@@ -72,11 +115,86 @@ a {
   cursor: pointer;
 }
 
+/* ── Motion ──────────────────────────────────────────────────────────────
+ * One entrance, one pulse, one stroke-draw. Everything else is a
+ * transition. The reduced-motion block at the bottom flattens all of it.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal {
+  animation: rise 0.55s var(--ease-out-soft) both;
+}
+.reveal-1 {
+  animation-delay: 60ms;
+}
+.reveal-2 {
+  animation-delay: 120ms;
+}
+.reveal-3 {
+  animation-delay: 180ms;
+}
+.reveal-4 {
+  animation-delay: 240ms;
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--color-accent-ring);
+  }
+  55% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+.status-dot-live {
+  animation: status-pulse 1.8s var(--ease-out-soft) infinite;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.check-draw {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: draw 0.5s var(--ease-out-soft) 0.15s forwards;
+}
+
+/* Interactive lift, used by cards and the primary button. */
+.lift {
+  transition:
+    transform 0.2s var(--ease-out-soft),
+    box-shadow 0.2s var(--ease-out-soft);
+}
+.lift:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lift);
+}
+.lift:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+  .check-draw {
+    stroke-dashoffset: 0;
   }
 }
