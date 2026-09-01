@@ -17,3 +17,7 @@ apps/api/env/*
 docs/swagger.yaml
 .turbo/
 .vercel/
+
+# local agent skills — kept out of the public repo
+.agents/
+.claude/
