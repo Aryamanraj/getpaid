@@ -80,16 +80,21 @@ export function WalletSignIn({
     setError(null);
     setBusy('solana');
     try {
-      if (!solana.connected) {
+      // The `solana` context is a render-time snapshot: right after a
+      // first-time connect its publicKey/signMessage still reflect the
+      // disconnected state, so sign with the adapter we just connected.
+      let adapter = solana.wallet?.adapter;
+      if (!solana.connected || !adapter?.publicKey) {
         const w =
           solana.wallets.find((x) => x.readyState === 'Installed') ??
           solana.wallets[0];
         if (!w) throw new Error('No Solana wallet found');
         solana.select(w.adapter.name);
         await w.adapter.connect();
+        adapter = w.adapter;
       }
-      const pubkey = solana.publicKey ?? solana.wallet?.adapter.publicKey;
-      if (!pubkey || !solana.signMessage)
+      const pubkey = adapter.publicKey ?? solana.publicKey;
+      if (!pubkey || !(adapter && 'signMessage' in adapter))
         throw new Error('Wallet cannot sign messages');
       const address = pubkey.toBase58();
 
@@ -97,9 +102,11 @@ export function WalletSignIn({
         method: 'POST',
         body: { address, namespace: 'solana', host: currentHost() },
       });
-      const sig = await solana.signMessage(
-        new TextEncoder().encode(challenge.message),
-      );
+      const sig = await (
+        adapter as unknown as {
+          signMessage: (m: Uint8Array) => Promise<Uint8Array>;
+        }
+      ).signMessage(new TextEncoder().encode(challenge.message));
       const result = await api<LoginResult>('/auth/walletLogin', {
         method: 'POST',
         auth: link,
