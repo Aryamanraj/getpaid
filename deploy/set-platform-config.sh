@@ -7,9 +7,15 @@
 # Blank input skips a key. Safe to re-run any time — set is an upsert.
 # JWT secrets are not asked for: the API generates them itself on first boot.
 #
-# Paste-safe: the whole flow lives in main(), invoked on the last line, so the
-# shell parses everything before the first prompt runs; input comes from
-# /dev/tty so prompts never consume queued paste or piped stdin.
+# Paste-safe: one if/fi spans the whole file, so any shell parses the entire
+# paste before executing a line; zsh (whose read/set semantics differ and can
+# kill the session) bails out with a message before set -e is armed; prompts
+# read from /dev/tty so they never consume queued paste or piped stdin.
+if [ -n "${ZSH_VERSION:-}" ]; then
+  echo 'bash-only script. Run:  bash deploy/set-platform-config.sh' >&2
+  echo "(or type 'bash', press Enter, paste again, and 'exit' when done)" >&2
+else
+
 set -euo pipefail
 
 json_escape() {
@@ -98,3 +104,5 @@ main() {
 }
 
 main
+
+fi
