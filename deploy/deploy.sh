@@ -18,11 +18,12 @@ compose build web api
 compose run --rm --no-deps api node dist/src/db/migrate
 compose up -d web api redis
 
-for _ in $(seq 1 30); do
+for i in $(seq 1 30); do
   if compose exec -T api wget -qO- http://127.0.0.1:3001/api/v1/health >/dev/null 2>&1; then
     echo 'deploy ok: api healthy'
     exit 0
   fi
+  echo "waiting for api on :3001 ($i/30)..."
   sleep 5
 done
 
