@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+logs/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+apps/api/env/*
+!apps/api/env/.env.example
+*.tsbuildinfo
+# generated on every API boot
+docs/swagger.yaml
+.turbo/
+.vercel/

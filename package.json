@@ -1,0 +1,28 @@
+{
+  "name": "getpaid",
+  "version": "0.1.0",
+  "private": true,
+  "license": "FSL-1.1-ALv2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api": "yarn workspace @recv/api",
+    "web": "yarn workspace @recv/web",
+    "shared": "yarn workspace @recv/shared",
+    "build": "yarn shared build && yarn api build && yarn web build",
+    "biome": "biome check --write .",
+    "biome:ci": "biome ci .",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "typescript": "^6.0.3"
+  },
+  "packageManager": "yarn@1.22.22",
+  "resolutions": {
+    "typeorm": "0.3.31"
+  }
+}
