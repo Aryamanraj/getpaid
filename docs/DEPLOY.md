@@ -157,7 +157,7 @@ Per domain:
    `/etc/nginx/sites-available/`, symlink into `sites-enabled/`, then
    `sudo nginx -t && sudo systemctl reload nginx`. The config routes
    `api.<domain>` to the API on `127.0.0.1:3001` and everything else to the
-   web app on `127.0.0.1:3000` — the app-level Host-header rewrite does the
+   web app on `127.0.0.1:3274` — the app-level Host-header rewrite does the
    per-username routing, so no per-user nginx or DNS entries exist.
 
 Start the stack with the override that binds both apps to loopback, naming

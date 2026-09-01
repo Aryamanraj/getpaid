@@ -11,7 +11,8 @@
 services:
   web:
     ports:
-      - '127.0.0.1:3000:3000'
+      # host 3274 → container 3000: 3000 is taken by another app on the server
+      - '127.0.0.1:3274:3000'
   api:
     ports:
       - '127.0.0.1:3001:3001'
