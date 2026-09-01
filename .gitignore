@@ -21,3 +21,4 @@ docs/swagger.yaml
 # local agent skills — kept out of the public repo
 .agents/
 .claude/
+skills-lock.json
