@@ -1,0 +1,19 @@
+# Keep the build context to sources only. Two of these are load-bearing:
+# env files must never enter an image layer, and host build output /
+# node_modules would both bloat the context and poison layer caching.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/*.tsbuildinfo
+**/.env*
+!**/.env.example
+.git
+logs
+**/*.log
+deploy
+docs
+.github
+.claude
+.agents
+*.md
