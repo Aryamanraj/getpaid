@@ -135,7 +135,10 @@ function RequestForm({
             if (amountOk && selected) create();
           }}
         >
-          <fieldset>
+          {/* min-w-0 overrides the fieldset's min-width:min-content default,
+              which otherwise blocks the tab row from scrolling and pushes it
+              out of the card */}
+          <fieldset className="min-w-0">
             <legend className="mb-2 text-sm font-medium">Network</legend>
             <div className="flex gap-0.5 overflow-x-auto rounded-full bg-[color:var(--color-background)] p-1">
               {grouped.map((g) => {
