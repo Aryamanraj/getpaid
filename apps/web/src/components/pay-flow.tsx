@@ -78,6 +78,9 @@ function RequestForm({
   const [selected, setSelected] = useState<ProfileAcceptedAsset | null>(
     profile.acceptedAssets[0] ?? null,
   );
+  const [chainId, setChainId] = useState<number | null>(
+    profile.acceptedAssets[0]?.chain.chainId ?? null,
+  );
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [payerName, setPayerName] = useState('');
@@ -133,57 +136,77 @@ function RequestForm({
           }}
         >
           <fieldset>
-            <legend className="mb-2 text-sm font-medium">Pay with</legend>
-            <div className="flex flex-col gap-2">
-              {grouped.map((g) => (
-                <div key={g.name} className="flex flex-wrap items-center gap-2">
-                  <span className="w-24 shrink-0 text-sm text-[color:var(--color-muted)]">
+            <legend className="mb-2 text-sm font-medium">Network</legend>
+            <div className="flex gap-0.5 overflow-x-auto rounded-full bg-[color:var(--color-background)] p-1">
+              {grouped.map((g) => {
+                const id = g.items[0].chain.chainId;
+                const on = id === chainId;
+                return (
+                  <button
+                    key={g.name}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setChainId(id);
+                      setSelected(g.items[0]);
+                    }}
+                    className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200 ${
+                      on
+                        ? 'bg-[color:var(--color-surface)] text-[color:var(--color-foreground)] [box-shadow:var(--shadow-sm)]'
+                        : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]'
+                    }`}
+                  >
                     {g.name}
-                  </span>
-                  {g.items.map((a) => {
-                    const on = selected?.acceptedAssetId === a.acceptedAssetId;
-                    return (
-                      <button
-                        key={a.acceptedAssetId}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => setSelected(a)}
-                        className={`min-h-10 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
-                          on
-                            ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
-                            : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
-                        }`}
-                      >
-                        {a.asset.symbol}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {grouped
+                .find((g) => g.items[0].chain.chainId === chainId)
+                ?.items.map((a) => {
+                  const on = selected?.acceptedAssetId === a.acceptedAssetId;
+                  return (
+                    <button
+                      key={a.acceptedAssetId}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setSelected(a)}
+                      className={`min-h-9 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
+                        on
+                          ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
+                          : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-background)]'
+                      }`}
+                    >
+                      {a.asset.symbol}
+                    </button>
+                  );
+                })}
             </div>
           </fieldset>
 
           <div>
-            <Label htmlFor="amount">
-              Amount{selected ? ` in ${selected.asset.symbol}` : ''}
-            </Label>
-            <Input
-              id="amount"
-              inputMode="decimal"
-              autoComplete="off"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
-              className="tabular min-h-14 text-3xl font-semibold tracking-tight"
-              aria-describedby="amount-hint"
-            />
-            <Muted className="mt-1.5">
-              <span id="amount-hint">
-                {selected
-                  ? `Sent as ${selected.asset.symbol} on ${selected.chain.name}. No conversion.`
-                  : ''}
-              </span>
-            </Muted>
+            <Label htmlFor="amount">Amount</Label>
+            <div className="relative">
+              <Input
+                id="amount"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) =>
+                  setAmount(e.target.value.replace(/[^\d.]/g, ''))
+                }
+                className="tabular min-h-14 pr-16 text-3xl font-semibold tracking-tight"
+              />
+              {selected ? (
+                <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-lg font-medium text-[color:var(--color-muted)]">
+                  {selected.asset.symbol}
+                </span>
+              ) : null}
+            </div>
+            <Muted className="mt-1.5">No fiat conversion.</Muted>
           </div>
 
           <div>

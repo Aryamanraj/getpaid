@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { PublicProfile } from '@recv/shared';
 import { getBootstrap, getHost } from '@/lib/bootstrap';
-import { userGradient } from '@/lib/avatar';
+import { userAccent } from '@/lib/avatar';
 import { PayFlow } from '@/components/pay-flow';
 
 const API_URL =
@@ -72,62 +72,68 @@ export default async function ProfilePage({ params }: PageProps) {
   if (!bootstrap || !profile) notFound();
 
   const name = profile.displayName || profile.userName;
-  const gradient = userGradient(profile.userName);
+  const accent = userAccent(profile.userName);
   const verified = profile.acceptedAssets.some((a) => a.isProven);
 
   return (
     <main className="bg-dots mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-12 sm:px-6 sm:py-16">
-      <header className="reveal flex flex-col items-center text-center">
-        <div
-          className="rounded-full p-[3px] [box-shadow:var(--shadow-md)]"
-          style={{ background: gradient }}
-        >
-          {profile.avatarUrl ? (
-            // biome-ignore lint/performance/noImgElement: user-supplied remote URL
-            <img
-              src={profile.avatarUrl}
-              alt=""
-              width={88}
-              height={88}
-              className="h-22 w-22 rounded-full border-2 border-[color:var(--color-background)] object-cover"
-            />
-          ) : (
-            <div
-              aria-hidden="true"
-              className="flex h-22 w-22 items-center justify-center rounded-full border-2 border-[color:var(--color-background)] text-3xl font-semibold text-white"
-              style={{ background: gradient }}
-            >
-              {name.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
+      <header className="reveal flex items-center gap-4">
+        {profile.avatarUrl ? (
+          // biome-ignore lint/performance/noImgElement: user-supplied remote URL
+          <img
+            src={profile.avatarUrl}
+            alt=""
+            width={64}
+            height={64}
+            className="h-16 w-16 shrink-0 rounded-2xl border border-[color:var(--color-border)] object-cover"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl text-2xl font-semibold"
+            style={{ background: accent.bg, color: accent.fg }}
+          >
+            {name.charAt(0).toUpperCase()}
+          </div>
+        )}
 
-        <p className="mt-5 text-xs font-medium tracking-[0.18em] text-[color:var(--color-muted)] uppercase">
-          Pay
-        </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{name}</h1>
-
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-          <span className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-background)] px-3 py-1 font-mono text-xs text-[color:var(--color-muted)]">
-            {profile.userName}.{bootstrap.domain.host}
-          </span>
-          {verified ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-success)] bg-[color:var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[color:var(--color-success)]">
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 rounded-full bg-current"
-              />
-              Verified wallet
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-semibold tracking-tight">
+            {name}
+          </h1>
+          <p className="mt-0.5 flex items-center gap-1.5 font-mono text-sm text-[color:var(--color-muted)]">
+            <span className="truncate">
+              {profile.userName}.{bootstrap.domain.host}
             </span>
-          ) : null}
-        </div>
-
-        {profile.bio ? (
-          <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-[color:var(--color-muted)]">
-            {profile.bio}
+            {verified ? (
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-label="Verified wallet"
+                className="shrink-0 text-[color:var(--color-success)]"
+              >
+                <title>Verified wallet</title>
+                <circle cx="12" cy="12" r="10" fill="currentColor" />
+                <path
+                  d="M7.5 12.5l3 3 6-7"
+                  stroke="var(--color-surface)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            ) : null}
           </p>
-        ) : null}
+        </div>
       </header>
+
+      {profile.bio ? (
+        <p className="reveal reveal-1 mt-4 text-[15px] leading-relaxed text-[color:var(--color-muted)]">
+          {profile.bio}
+        </p>
+      ) : null}
 
       <PayFlow profile={profile} brandName={bootstrap.domain.brandName} />
 

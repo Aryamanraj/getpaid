@@ -74,8 +74,10 @@ export function Card({
   return (
     <div
       className={cx(
-        'rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5',
-        elevated && '[box-shadow:var(--shadow-md)]',
+        'rounded-[var(--radius)] border bg-[color:var(--color-surface)] p-5',
+        elevated
+          ? 'border-[color:var(--color-border-strong)] [box-shadow:var(--shadow-md)]'
+          : 'border-[color:var(--color-border)]',
         className,
       )}
     >
