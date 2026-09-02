@@ -66,6 +66,7 @@ export function WalletSignIn({
           namespace: 'eip155',
           message: challenge.message,
           signature,
+          host: currentHost(),
         },
       });
       onSuccess(result);
@@ -115,6 +116,7 @@ export function WalletSignIn({
           namespace: 'solana',
           message: challenge.message,
           signature: bs58.encode(sig),
+          host: currentHost(),
         },
       });
       onSuccess(result);

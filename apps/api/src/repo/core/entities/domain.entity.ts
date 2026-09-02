@@ -98,7 +98,7 @@ export class Domain extends BaseEntity {
   @ApiProperty({ type: () => User, isArray: true })
   @OneToMany(
     () => User,
-    (user) => user.PreferredDomain,
+    (user) => user.Domain,
   )
   Users: User[];
 

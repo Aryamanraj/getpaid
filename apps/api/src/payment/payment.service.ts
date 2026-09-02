@@ -54,8 +54,18 @@ export class PaymentService {
         `[PaymentService.createRequest] payee ${userName} asset ${dto.assetId}`,
       );
 
+      // The payee lives on the domain the payer is visiting — domains are
+      // separate products with separate username namespaces.
+      const requestDomain = await Promisify<Domain>(
+        this.domainService.getByHost(dto.host),
+      );
+
       const accepted = await Promisify<AcceptedAsset>(
-        this.paymentMethodService.resolveAcceptedAsset(userName, dto.assetId),
+        this.paymentMethodService.resolveAcceptedAsset(
+          userName,
+          dto.assetId,
+          requestDomain.DomainID,
+        ),
       );
 
       // SV13 — bignumber only; the amount never touches a JS number.
@@ -82,15 +92,12 @@ export class PaymentService {
         'payment.request.ttlMinutes',
         60,
       );
-      const domain = await Promisify<Domain>(
-        this.domainService.getByHost(dto.host),
-      );
 
       const request = await Promisify<PaymentRequest>(
         this.paymentRequestRepo.create({
           PublicID: publicId(),
           PayeeUser: accepted.User,
-          Domain: domain,
+          Domain: requestDomain,
           Asset: accepted.Asset,
           Chain: accepted.Asset.Chain,
           ToAddress: accepted.PayoutAddress.Address,

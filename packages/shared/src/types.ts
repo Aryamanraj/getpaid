@@ -93,7 +93,7 @@ export interface MeResponse {
   displayName?: string;
   bio?: string;
   avatarUrl?: string;
-  preferredDomainId?: number;
+  domainId: number;
   identities: AuthIdentitySummary[];
   createdAt: string;
 }

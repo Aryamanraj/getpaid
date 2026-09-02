@@ -31,6 +31,11 @@ export class VerifyOtpDto {
   @IsString()
   @Length(4, 10)
   code: string;
+
+  @ApiProperty({ example: 'payee.id', description: 'Host the user is on' })
+  @IsString()
+  @MaxLength(253)
+  host: string;
 }
 
 export class GetNonceDto {
@@ -68,6 +73,11 @@ export class WalletLoginDto {
   @IsString()
   @MaxLength(512)
   signature: string;
+
+  @ApiProperty({ example: 'payee.id', description: 'Host the user is on' })
+  @IsString()
+  @MaxLength(253)
+  host: string;
 }
 
 export class RefreshDto {

@@ -23,6 +23,7 @@ project.
 | Custody | Non-custodial. Funds go payer → payee directly. We never hold keys |
 | Amounts | Denominated and displayed in the asset sent. No fiat conversion in v1 |
 | Domains (v1) | `payee.id` and `recv.to`. More later, without a code change |
+| Tenancy | Domains are **separate products**: accounts, sign-in identities, and usernames are scoped to the domain they were created on. The same email or wallet registers independently on each domain, and `aryaman` on one domain says nothing about `aryaman` on another |
 | Package manager | Yarn workspaces |
 | Licence | **FSL-1.1-ALv2** — source-available, not open source. See §15 |
 | Email | Novu Cloud orchestration, Resend delivery. Both free tier |

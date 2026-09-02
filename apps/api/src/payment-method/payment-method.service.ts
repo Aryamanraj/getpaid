@@ -302,13 +302,14 @@ export class PaymentMethodService {
   async resolveAcceptedAsset(
     userName: string,
     assetId: number,
+    domainId: number,
   ): Promise<ResultWithError> {
     try {
       const accepted = await Promisify<AcceptedAsset>(
         this.acceptedAssetRepo.get(
           {
             where: {
-              User: { UserName: userName, IsActive: true },
+              User: { UserName: userName, DomainID: domainId, IsActive: true },
               Asset: { AssetID: assetId, IsActive: true },
               IsActive: true,
               PayoutAddress: { IsActive: true },

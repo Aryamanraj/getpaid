@@ -52,7 +52,7 @@ function LoginInner() {
       finish(
         await api<LoginResult>('/auth/verifyOtp', {
           method: 'POST',
-          body: { email, code },
+          body: { email, code, host: currentHost() },
         }),
       );
     } catch (e) {

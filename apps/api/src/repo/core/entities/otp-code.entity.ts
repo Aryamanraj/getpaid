@@ -9,11 +9,19 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'OtpCodes', schema: 'core' })
-@Index('IX_OtpCodes_Email_ExpiresAt', ['Email', 'ExpiresAt'])
+@Index('IX_OtpCodes_DomainID_Email_ExpiresAt', [
+  'DomainID',
+  'Email',
+  'ExpiresAt',
+])
 export class OtpCode extends BaseEntity {
   @ApiProperty()
   @PrimaryGeneratedColumn()
   OtpCodeID: number;
+
+  @ApiProperty({ description: 'Domain the code was requested on' })
+  @Column({ type: 'int' })
+  DomainID: number;
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 320 })

@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { DomainModule } from '../domain/domain.module';
 import { RepoModule } from '../repo/repo.module';
 import { LoggerMiddleware } from '../common/middlewares/logger.middleware';
 import { AuthModule } from '../auth/auth.module';
@@ -7,7 +8,7 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 
 @Module({
-  imports: [RepoModule, AuthModule, PlatformConfigModule],
+  imports: [RepoModule, AuthModule, PlatformConfigModule, DomainModule],
   providers: [UserService],
   controllers: [UserController],
   exports: [UserService],

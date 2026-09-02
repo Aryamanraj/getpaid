@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { checkUserNameShape, normaliseUserName } from '@recv/shared';
-import { api } from '@/lib/api';
+import { api, currentHost } from '@/lib/api';
 import { useIsAuthed } from '@/lib/use-auth';
 import { ErrorText } from '@/components/ui';
 
@@ -116,7 +116,7 @@ export function ClaimForm({ host }: { host: string }) {
       try {
         setAvailability(
           await api<{ available: boolean; reason?: string }>(
-            `/user/checkUserName?userName=${encodeURIComponent(name)}`,
+            `/user/checkUserName?userName=${encodeURIComponent(name)}&host=${encodeURIComponent(currentHost())}`,
           ),
         );
       } catch {

@@ -118,23 +118,25 @@ export class AuthService implements OnModuleInit {
       const code = this.randomDigits(codeLength);
       const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
 
-      // A new request supersedes any code still in flight for this address.
+      const domain = await Promisify<Domain>(
+        this.domainService.getByHost(host),
+      );
+
+      // A new request supersedes any code still in flight for this address
+      // on this domain — domains are separate products.
       await this.otpCodeRepo.update(
-        { Email: normalised, ConsumedAt: IsNull() },
+        { Email: normalised, DomainID: domain.DomainID, ConsumedAt: IsNull() },
         { ConsumedAt: new Date() },
       );
 
       await Promisify<OtpCode>(
         this.otpCodeRepo.create({
           Email: normalised,
+          DomainID: domain.DomainID,
           CodeHash: this.hashOtp(normalised, code),
           ExpiresAt: expiresAt,
           RequestIp: ctx.ip,
         }),
-      );
-
-      const domain = await Promisify<Domain>(
-        this.domainService.getByHost(host),
       );
 
       await Promisify<boolean>(
@@ -159,12 +161,17 @@ export class AuthService implements OnModuleInit {
   async verifyOtp(
     email: string,
     code: string,
+    host: string,
     ctx: RequestContext,
     linkToUserId?: number,
   ): Promise<ResultWithError> {
     try {
       const normalised = this.normaliseEmail(email);
       this.logger.info(`[AuthService.verifyOtp] email: ${normalised}`);
+
+      const domain = await Promisify<Domain>(
+        this.domainService.getByHost(host),
+      );
 
       const maxAttempts = await this.platformConfigService.getConfigOrDefault(
         'auth.otp.maxVerifyAttempts',
@@ -173,6 +180,7 @@ export class AuthService implements OnModuleInit {
 
       const where: FindOptionsWhere<OtpCode> = {
         Email: normalised,
+        DomainID: domain.DomainID,
         ConsumedAt: IsNull(),
         ExpiresAt: MoreThan(new Date()),
       };
@@ -217,6 +225,7 @@ export class AuthService implements OnModuleInit {
           AUTH_PROVIDER_ENUM.EMAIL,
           normalised,
           null,
+          domain,
           linkToUserId,
         ),
       );
@@ -301,6 +310,7 @@ export class AuthService implements OnModuleInit {
     namespace: CHAIN_NAMESPACE_ENUM,
     message: string,
     signature: string,
+    host: string,
     ctx: RequestContext,
     linkToUserId?: number,
   ): Promise<ResultWithError> {
@@ -312,11 +322,16 @@ export class AuthService implements OnModuleInit {
         this.verifyChallenge(canonical, namespace, message, signature),
       );
 
+      const domain = await Promisify<Domain>(
+        this.domainService.getByHost(host),
+      );
+
       const user = await Promisify<User>(
         this.resolveUserForIdentity(
           AUTH_PROVIDER_ENUM.WALLET,
           canonical,
           namespace,
+          domain,
           linkToUserId,
         ),
       );
@@ -497,21 +512,27 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
-   * Finds the user behind an identity, creating one when it is new. When a
-   * signed-in user is linking, the identity must be unclaimed — we never
-   * silently merge two accounts.
+   * Finds the user behind an identity on one domain, creating one when it is
+   * new — domains are separate products, so the same email or wallet on
+   * another domain is a different account. When a signed-in user is linking,
+   * the identity must be unclaimed — we never silently merge two accounts.
    */
   private async resolveUserForIdentity(
     provider: AUTH_PROVIDER_ENUM,
     identifier: string,
     namespace: CHAIN_NAMESPACE_ENUM,
+    domain: Domain,
     linkToUserId?: number,
   ): Promise<ResultWithError> {
     try {
       const existing = await Promisify<AuthIdentity>(
         this.authIdentityRepo.get(
           {
-            where: { Provider: provider, Identifier: identifier },
+            where: {
+              Provider: provider,
+              Identifier: identifier,
+              DomainID: domain.DomainID,
+            },
             relations: { User: true },
           },
           false,
@@ -532,9 +553,18 @@ export class AuthService implements OnModuleInit {
 
       let user: User;
       await this.entityManager.transaction(async (tm) => {
-        user = linkToUserId
-          ? await tm.findOneOrFail(User, { where: { UserID: linkToUserId } })
-          : await tm.save(tm.create(User, {}));
+        if (linkToUserId) {
+          user = await tm.findOneOrFail(User, {
+            where: { UserID: linkToUserId },
+          });
+          if (user.DomainID !== domain.DomainID)
+            throw new GenericError(
+              'That account belongs to a different domain',
+              HttpStatus.CONFLICT,
+            );
+        } else {
+          user = await tm.save(tm.create(User, { Domain: domain }));
+        }
 
         const isFirst =
           (await tm.count(AuthIdentity, {
@@ -544,6 +574,7 @@ export class AuthService implements OnModuleInit {
         await tm.save(
           tm.create(AuthIdentity, {
             User: user,
+            Domain: domain,
             Provider: provider,
             Identifier: identifier,
             Namespace: namespace,

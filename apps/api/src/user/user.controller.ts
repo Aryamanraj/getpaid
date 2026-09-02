@@ -45,12 +45,14 @@ export class UserController {
   ) {}
 
   @Get('checkUserName')
-  @ApiOperation({ summary: 'Is this username available?' })
+  @ApiOperation({ summary: 'Is this username available on this domain?' })
   @ApiQuery({ name: 'userName', example: 'aryaman' })
+  @ApiQuery({ name: 'host', example: 'payee.id' })
   @ApiOkResponseGeneric({ description: 'Checked', status: HttpStatus.OK })
   @ApiBadRequestResponse({ description: 'Failed to check' })
   async checkUserName(
     @Query('userName') userName: string,
+    @Query('host') host: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
@@ -72,7 +74,7 @@ export class UserController {
         ),
       );
       const result = await Promisify<{ available: boolean; reason?: string }>(
-        this.userService.checkUserName(userName ?? ''),
+        this.userService.checkUserName(userName ?? '', host ?? ''),
       );
       resData = result;
     } catch (error) {
@@ -181,20 +183,25 @@ export class UserController {
   }
 
   @Get('getProfile/:userName')
-  @ApiOperation({ summary: 'Public pay-page profile' })
+  @ApiOperation({ summary: 'Public pay-page profile, scoped to one domain' })
+  @ApiQuery({ name: 'host', example: 'payee.id' })
   @ApiOkResponseGeneric({
     description: 'Fetched profile',
     status: HttpStatus.OK,
   })
   @ApiBadRequestResponse({ description: 'Failed to fetch profile' })
-  async getProfile(@Param('userName') userName: string, @Res() res: Response) {
+  async getProfile(
+    @Param('userName') userName: string,
+    @Query('host') host: string,
+    @Res() res: Response,
+  ) {
     let resStatus = HttpStatus.OK;
     let resMessage = 'Fetched profile';
     let resData = null;
     let resSuccess = true;
     try {
       const result = await Promisify<PublicProfile>(
-        this.userService.getPublicProfile(userName),
+        this.userService.getPublicProfile(userName, host ?? ''),
       );
       resData = result;
     } catch (error) {

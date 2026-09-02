@@ -19,6 +19,9 @@ import { PaymentMethod } from './payment-method.entity';
 import { PaymentRequest } from './payment-request.entity';
 
 @Entity({ name: 'Users', schema: 'core' })
+@Index('UQ_Users_DomainID_UserName', ['DomainID', 'UserName'], {
+  unique: true,
+})
 export class User extends BaseEntity {
   @ApiProperty()
   @PrimaryGeneratedColumn()
@@ -27,9 +30,8 @@ export class User extends BaseEntity {
   @ApiProperty({
     nullable: true,
     description:
-      'Stored lowercase; unique across every domain. NULL until claimed',
+      'Stored lowercase; unique within the owning domain. NULL until claimed',
   })
-  @Index('UQ_Users_UserName', { unique: true })
   @Column({ type: 'varchar', length: 30, nullable: true })
   UserName: string;
 
@@ -45,14 +47,21 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 2048, nullable: true })
   AvatarUrl: string;
 
-  @ApiProperty({ type: () => Domain, nullable: true })
+  @ApiProperty({
+    description:
+      'The domain this account belongs to. Domains are separate products',
+  })
+  @Column({ type: 'int' })
+  DomainID: number;
+
+  @ApiProperty({ type: () => Domain })
   @ManyToOne(
     () => Domain,
     (domain) => domain.Users,
-    { nullable: true },
+    { nullable: false },
   )
-  @JoinColumn({ name: 'PreferredDomainID' })
-  PreferredDomain: Domain;
+  @JoinColumn({ name: 'DomainID' })
+  Domain: Domain;
 
   @ApiProperty()
   @Column({ type: 'boolean', default: true })

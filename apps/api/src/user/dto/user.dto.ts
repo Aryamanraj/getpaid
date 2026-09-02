@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsInt,
   IsOptional,
   IsString,
   IsUrl,
@@ -34,9 +33,4 @@ export class UpdateProfileDto {
   @IsUrl({ require_protocol: true, protocols: ['https'] })
   @MaxLength(2048)
   avatarUrl?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsInt()
-  preferredDomainId?: number;
 }

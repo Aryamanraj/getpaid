@@ -12,19 +12,32 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { AUTH_PROVIDER_ENUM, CHAIN_NAMESPACE_ENUM } from '@recv/shared';
 import { User } from './user.entity';
+import { Domain } from './domain.entity';
 
 /**
  * One user, many identities. Email OTP and wallet signatures both land here,
- * so a user can sign in either way once both are linked.
+ * so a user can sign in either way once both are linked. Scoped per domain:
+ * the same email or wallet registers independently on each product.
  */
 @Entity({ name: 'AuthIdentities', schema: 'core' })
-@Index('UQ_AuthIdentities_Provider_Identifier', ['Provider', 'Identifier'], {
-  unique: true,
-})
+@Index(
+  'UQ_AuthIdentities_DomainID_Provider_Identifier',
+  ['DomainID', 'Provider', 'Identifier'],
+  { unique: true },
+)
 export class AuthIdentity extends BaseEntity {
   @ApiProperty()
   @PrimaryGeneratedColumn()
   AuthIdentityID: number;
+
+  @ApiProperty({ description: 'Domain this identity belongs to' })
+  @Column({ type: 'int' })
+  DomainID: number;
+
+  @ApiProperty({ type: () => Domain })
+  @ManyToOne(() => Domain, { nullable: false })
+  @JoinColumn({ name: 'DomainID' })
+  Domain: Domain;
 
   @ApiProperty({ type: () => User })
   @ManyToOne(

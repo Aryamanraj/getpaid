@@ -7,10 +7,13 @@ import { PayFlow } from '@/components/pay-flow';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
-async function getProfile(userName: string): Promise<PublicProfile | null> {
+async function getProfile(
+  userName: string,
+  host: string,
+): Promise<PublicProfile | null> {
   try {
     const res = await fetch(
-      `${API_URL}/user/getProfile/${encodeURIComponent(userName)}`,
+      `${API_URL}/user/getProfile/${encodeURIComponent(userName)}?host=${encodeURIComponent(host)}`,
       {
         next: { revalidate: 30 },
       },
@@ -36,7 +39,7 @@ export async function generateMetadata({
   const host = await getHost();
   const [bootstrap, profile] = await Promise.all([
     getBootstrap(host),
-    getProfile(username),
+    getProfile(username, host),
   ]);
   if (!bootstrap || !profile) return {};
   const name = profile.displayName || profile.userName;
@@ -63,7 +66,7 @@ export default async function ProfilePage({ params }: PageProps) {
   const host = await getHost();
   const [bootstrap, profile] = await Promise.all([
     getBootstrap(host),
-    getProfile(username),
+    getProfile(username, host),
   ]);
   if (!bootstrap || !profile) notFound();
 

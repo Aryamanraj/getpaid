@@ -107,6 +107,7 @@ export class AuthController {
         this.authService.verifyOtp(
           data.email,
           data.code,
+          data.host,
           ctxOf(req),
           req.userId,
         ),
@@ -175,6 +176,7 @@ export class AuthController {
           data.namespace,
           data.message,
           data.signature,
+          data.host,
           ctxOf(req),
           req.userId,
         ),

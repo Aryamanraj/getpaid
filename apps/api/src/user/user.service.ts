@@ -19,6 +19,7 @@ import { AuthIdentity } from '../repo/core/entities/auth-identity.entity';
 import { AcceptedAsset } from '../repo/core/entities/accepted-asset.entity';
 import { Domain } from '../repo/core/entities/domain.entity';
 import { PlatformConfigService } from '../platform-config/platform-config.service';
+import { DomainService } from '../domain/domain.service';
 import { ResultWithError } from '../common/interfaces';
 import { GenericError } from '../common/errors/Generic.error';
 import { Promisify } from '../common/helpers/promisifier';
@@ -34,13 +35,32 @@ export class UserService {
     private acceptedAssetRepo: AcceptedAssetRepoService,
     private domainRepo: DomainRepoService,
     private platformConfigService: PlatformConfigService,
+    private domainService: DomainService,
   ) {}
 
-  async checkUserName(input: string): Promise<ResultWithError> {
+  async checkUserName(input: string, host: string): Promise<ResultWithError> {
     try {
       const name = normaliseUserName(input);
-      this.logger.info(`[UserService.checkUserName] name: ${name}`);
+      this.logger.info(`[UserService.checkUserName] name: ${name} @ ${host}`);
 
+      const domain = await Promisify<Domain>(
+        this.domainService.getByHost(host),
+      );
+      return await this.availability(name, domain.DomainID);
+    } catch (error) {
+      this.logger.error(
+        `[UserService.checkUserName] error for ${input}: ${error.stack}`,
+      );
+      return { data: null, error };
+    }
+  }
+
+  /** Names are scoped per domain — each product has its own namespace. */
+  private async availability(
+    name: string,
+    domainId: number,
+  ): Promise<ResultWithError> {
+    try {
       const minLength = await this.platformConfigService.getConfigOrDefault(
         'username.minLength',
         3,
@@ -70,7 +90,7 @@ export class UserService {
         };
 
       const taken = await Promisify<number>(
-        this.userRepo.count({ where: { UserName: name } }),
+        this.userRepo.count({ where: { UserName: name, DomainID: domainId } }),
       );
       if (taken > 0)
         return {
@@ -81,7 +101,7 @@ export class UserService {
       return { data: { available: true }, error: null };
     } catch (error) {
       this.logger.error(
-        `[UserService.checkUserName] error for ${input}: ${error.stack}`,
+        `[UserService.availability] error for ${name}: ${error.stack}`,
       );
       return { data: null, error };
     }
@@ -112,7 +132,7 @@ export class UserService {
         );
 
       const check = await Promisify<{ available: boolean; reason?: string }>(
-        this.checkUserName(name),
+        this.availability(name, user.DomainID),
       );
       if (!check.available)
         throw new GenericError(check.reason, HttpStatus.CONFLICT);
@@ -145,10 +165,7 @@ export class UserService {
       this.logger.info(`[UserService.getMe] user ${userId}`);
 
       const user = await Promisify<User>(
-        this.userRepo.get({
-          where: { UserID: userId },
-          relations: { PreferredDomain: true },
-        }),
+        this.userRepo.get({ where: { UserID: userId } }),
       );
       const identities = await Promisify<AuthIdentity[]>(
         this.authIdentityRepo.getAll(
@@ -163,7 +180,7 @@ export class UserService {
         displayName: user.DisplayName,
         bio: user.Bio,
         avatarUrl: user.AvatarUrl,
-        preferredDomainId: user.PreferredDomain?.DomainID,
+        domainId: user.DomainID,
         identities: (identities ?? []).map((i) => ({
           authIdentityId: i.AuthIdentityID,
           provider: i.Provider,
@@ -191,23 +208,12 @@ export class UserService {
       this.logger.info(`[UserService.updateProfile] user ${userId}`);
 
       const user = await Promisify<User>(
-        this.userRepo.get({
-          where: { UserID: userId },
-          relations: { PreferredDomain: true },
-        }),
+        this.userRepo.get({ where: { UserID: userId } }),
       );
 
       if (dto.displayName !== undefined) user.DisplayName = dto.displayName;
       if (dto.bio !== undefined) user.Bio = dto.bio;
       if (dto.avatarUrl !== undefined) user.AvatarUrl = dto.avatarUrl;
-      if (dto.preferredDomainId !== undefined) {
-        // SV7 — fetch the relation, never assign a stub.
-        user.PreferredDomain = await Promisify<Domain>(
-          this.domainRepo.get({
-            where: { DomainID: dto.preferredDomainId, IsActive: true },
-          }),
-        );
-      }
 
       const saved = await Promisify<User>(this.userRepo.create(user));
       return await this.getMe(saved.UserID);
@@ -220,13 +226,22 @@ export class UserService {
   }
 
   /** The pay page. Public, so it exposes only what a payer needs. */
-  async getPublicProfile(input: string): Promise<ResultWithError> {
+  async getPublicProfile(
+    input: string,
+    host: string,
+  ): Promise<ResultWithError> {
     try {
       const name = normaliseUserName(input);
-      this.logger.info(`[UserService.getPublicProfile] name: ${name}`);
+      this.logger.info(
+        `[UserService.getPublicProfile] name: ${name} @ ${host}`,
+      );
 
+      const domain = await Promisify<Domain>(
+        this.domainService.getByHost(host),
+      );
       const where: FindOptionsWhere<User> = {
         UserName: name,
+        DomainID: domain.DomainID,
         IsActive: true,
       };
       const user = await Promisify<User>(this.userRepo.get({ where }, false));
