@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
@@ -39,7 +40,9 @@ export class UserAuthGuard implements CanActivate {
       this.logger.warn(
         `[UserAuthGuard] rejected ${req?.method} ${req?.originalUrl}: ${error.message}`,
       );
-      return false;
+      // 401, not the ForbiddenException Nest infers from `return false` —
+      // the web client refreshes an expired session only on 401.
+      throw new UnauthorizedException('Session expired — sign in again');
     }
   }
 }

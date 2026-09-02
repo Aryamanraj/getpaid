@@ -118,7 +118,13 @@ export async function api<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-  if (res.status === 401 && auth && retry && (await refreshTokens())) {
+  // 403 included: older API builds reject an expired token with Forbidden.
+  if (
+    (res.status === 401 || res.status === 403) &&
+    auth &&
+    retry &&
+    (await refreshTokens())
+  ) {
     return api<T>(path, { method, body, auth, retry: false });
   }
 

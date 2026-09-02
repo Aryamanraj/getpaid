@@ -67,6 +67,15 @@ export default function DashboardPage() {
     if (!tokenStore.access) router.replace('/login?next=/dashboard');
   }, [router]);
 
+  // A session that cannot load `me` (refresh failed too) is dead — send the
+  // user back to sign-in instead of spinning forever.
+  useEffect(() => {
+    if (!loading && !me) {
+      tokenStore.clear();
+      router.replace('/login?next=/dashboard');
+    }
+  }, [loading, me, router]);
+
   const loadAll = useCallback(async () => {
     try {
       const [b, m, h] = await Promise.all([
