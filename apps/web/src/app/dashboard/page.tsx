@@ -25,6 +25,7 @@ import {
   Spinner,
 } from '@/components/ui';
 import { PENDING_CLAIM_KEY } from '@/components/claim-form';
+import { StatusBadge } from '@/components/payment-status';
 import { WalletSignIn } from '@/components/wallet-sign-in';
 
 interface PayoutAddressRow {
@@ -134,10 +135,10 @@ export default function DashboardPage() {
 
   return (
     <Page wide>
-      <header className="flex items-start justify-between gap-4">
+      <header className="reveal flex items-start justify-between gap-4">
         <div>
           <Muted>{bootstrap?.domain.brandName ?? host}</Muted>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="mt-0.5 text-3xl font-semibold tracking-tight">
             {me.userName ? `${me.userName}.${host}` : 'Your account'}
           </h1>
         </div>
@@ -158,10 +159,13 @@ export default function DashboardPage() {
       {!me.userName ? <ClaimSection host={host} onDone={reload} /> : null}
 
       {me.userName ? (
-        <Card className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
+        <Card
+          elevated
+          className="reveal reveal-1 mt-8 flex flex-wrap items-center justify-between gap-3"
+        >
+          <div className="min-w-0">
             <Muted>Your link</Muted>
-            <Mono className="text-[15px]">
+            <Mono className="text-base font-medium">
               https://{me.userName}.{host}
             </Mono>
           </div>
@@ -172,19 +176,36 @@ export default function DashboardPage() {
             />
             <Link
               href={`/u/${me.userName}`}
-              className="inline-flex min-h-9 items-center rounded-[var(--radius)] border border-[color:var(--color-border)] px-3 text-sm"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-[var(--radius)] border border-[color:var(--color-border)] px-3 text-sm font-medium transition-[background-color,border-color] duration-200 hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-background)]"
             >
               Preview
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M7 17L17 7M9 7h8v8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </Link>
           </div>
         </Card>
       ) : null}
 
-      <ProfileSection
-        me={me}
-        onSaved={reload}
-        domains={bootstrap ? [bootstrap.domain] : []}
-      />
+      <div className="reveal reveal-2">
+        <ProfileSection
+          me={me}
+          onSaved={reload}
+          domains={bootstrap ? [bootstrap.domain] : []}
+        />
+      </div>
 
       {bootstrap && methods ? (
         <PayoutSection
@@ -207,7 +228,9 @@ function ClaimSection({ host, onDone }: { host: string; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   return (
     <Card className="mt-6">
-      <h2 className="font-medium">Claim your username</h2>
+      <h2 className="text-[15px] font-semibold tracking-tight">
+        Claim your username
+      </h2>
       <Muted className="mt-1">
         This becomes your link. It can't be changed later.
       </Muted>
@@ -269,7 +292,7 @@ function ProfileSection({
 
   return (
     <Card className="mt-6">
-      <h2 className="font-medium">Profile</h2>
+      <h2 className="text-[15px] font-semibold tracking-tight">Profile</h2>
       <form
         className="mt-3 flex flex-col gap-3"
         onSubmit={async (e) => {
@@ -424,7 +447,9 @@ function PayoutSection({
 
   return (
     <Card className="mt-6">
-      <h2 className="font-medium">Where you get paid</h2>
+      <h2 className="text-[15px] font-semibold tracking-tight">
+        Where you get paid
+      </h2>
       <Muted className="mt-1">
         One EVM address works on every EVM chain. Toggle which assets show on
         your page.
@@ -434,7 +459,7 @@ function PayoutSection({
         {methods.payoutAddresses.map((pa) => (
           <li
             key={pa.payoutAddressId}
-            className="rounded-[var(--radius)] border border-[color:var(--color-border)] p-3"
+            className="rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-background)] p-4"
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
@@ -444,11 +469,15 @@ function PayoutSection({
                 </Muted>
                 <Mono className="text-sm">{pa.address}</Mono>
                 {pa.isProven ? (
-                  <Muted className="mt-1 text-[color:var(--color-success)]">
-                    Verified — you signed in with this wallet
-                  </Muted>
+                  <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-success)] bg-[color:var(--color-success-soft)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-success)]">
+                    <span
+                      aria-hidden="true"
+                      className="h-1.5 w-1.5 rounded-full bg-current"
+                    />
+                    Verified wallet
+                  </span>
                 ) : (
-                  <Muted className="mt-1">
+                  <Muted className="mt-1 text-xs">
                     Unverified — sign in with this wallet to prove you control
                     it
                   </Muted>
@@ -457,7 +486,7 @@ function PayoutSection({
               <button
                 type="button"
                 onClick={() => remove(pa.payoutAddressId)}
-                className="text-xs text-[color:var(--color-muted)] underline"
+                className="text-xs font-medium text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-danger)]"
               >
                 Remove
               </button>
@@ -484,10 +513,10 @@ function PayoutSection({
                         onClick={() =>
                           toggle(asset, pa.payoutAddressId, !onThis)
                         }
-                        className={`min-h-9 rounded-full border px-3 text-sm transition-colors duration-200 ${
+                        className={`min-h-9 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
                           onThis
-                            ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)]'
-                            : 'border-[color:var(--color-border)]'
+                            ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
+                            : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
                         }`}
                       >
                         {asset.symbol}
@@ -572,10 +601,10 @@ function PayoutSection({
                             : [...s, asset.assetId],
                         )
                       }
-                      className={`min-h-9 rounded-full border px-3 text-sm transition-colors duration-200 ${
+                      className={`min-h-9 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
                         on
-                          ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)]'
-                          : 'border-[color:var(--color-border)]'
+                          ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
+                          : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
                       }`}
                     >
                       {asset.symbol}
@@ -611,22 +640,78 @@ function IdentitiesSection({
   const [showLink, setShowLink] = useState(false);
   return (
     <Card className="mt-6">
-      <h2 className="font-medium">Sign-in methods</h2>
+      <h2 className="text-[15px] font-semibold tracking-tight">
+        Sign-in methods
+      </h2>
       <ul className="mt-3 flex flex-col gap-1 text-sm">
         {me.identities.map((i) => (
           <li
             key={`${i.provider}:${i.identifier}`}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2.5 py-0.5"
           >
-            <span className="w-14 text-[color:var(--color-muted)]">
-              {i.provider}
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[color:var(--color-border)] text-[color:var(--color-muted)]">
+              {i.provider === 'wallet' ? (
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="3"
+                    y="6"
+                    width="18"
+                    height="13"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="M3 10h18M16 14.5h2"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="3"
+                    y="5"
+                    width="18"
+                    height="14"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="m4 7 8 6 8-6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+              <span className="sr-only">{i.provider}</span>
             </span>
             <Mono>
               {i.provider === 'wallet'
                 ? shortAddress(i.identifier, 8, 6)
                 : i.identifier}
             </Mono>
-            {i.isPrimary ? <Muted>primary</Muted> : null}
+            {i.isPrimary ? (
+              <span className="rounded-full border border-[color:var(--color-border)] px-2 py-0.5 text-[11px] uppercase tracking-wide text-[color:var(--color-muted)]">
+                primary
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -656,19 +741,21 @@ function IdentitiesSection({
 function HistorySection({ items }: { items: PaymentRequestView[] }) {
   return (
     <Card className="mt-6">
-      <h2 className="font-medium">Payments</h2>
+      <h2 className="text-[15px] font-semibold tracking-tight">Payments</h2>
       {items.length === 0 ? (
-        <Muted className="mt-2">Nothing yet. Share your link.</Muted>
+        <div className="mt-3 rounded-[var(--radius)] border border-dashed border-[color:var(--color-border)] p-6 text-center">
+          <Muted>Nothing yet. Share your link — payments land here.</Muted>
+        </div>
       ) : (
         <ul className="mt-3 divide-y divide-[color:var(--color-border)]">
           {items.map((p) => (
             <li
               key={p.publicId}
-              className="flex items-center justify-between gap-3 py-2.5 text-sm"
+              className="flex items-center justify-between gap-3 py-3 text-sm"
             >
               <div className="min-w-0">
                 <div>
-                  <span className="font-medium">
+                  <span className="tabular font-medium">
                     {p.amountDisplay} {p.asset.symbol}
                   </span>
                   <span className="text-[color:var(--color-muted)]">
@@ -681,11 +768,8 @@ function HistorySection({ items }: { items: PaymentRequestView[] }) {
                   {p.note ? ` · ${p.note}` : ''}
                 </Muted>
               </div>
-              <Link
-                href={`/r/${p.publicId}`}
-                className={`shrink-0 text-xs uppercase tracking-wide ${p.status === 'confirmed' ? 'text-[color:var(--color-success)]' : p.status === 'failed' ? 'text-[color:var(--color-danger)]' : 'text-[color:var(--color-muted)]'}`}
-              >
-                {p.status}
+              <Link href={`/r/${p.publicId}`} className="shrink-0">
+                <StatusBadge status={p.status} />
               </Link>
             </li>
           ))}
