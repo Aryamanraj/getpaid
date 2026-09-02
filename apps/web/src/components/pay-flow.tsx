@@ -123,101 +123,105 @@ function RequestForm({
   }
 
   return (
-    <form
-      className="mt-8 flex flex-col gap-5"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (amountOk && selected) create();
-      }}
-    >
-      <fieldset>
-        <legend className="mb-2 text-sm font-medium">Pay with</legend>
-        <div className="flex flex-col gap-2">
-          {grouped.map((g) => (
-            <div key={g.name} className="flex flex-wrap items-center gap-2">
-              <span className="w-24 shrink-0 text-sm text-[color:var(--color-muted)]">
-                {g.name}
-              </span>
-              {g.items.map((a) => {
-                const on = selected?.acceptedAssetId === a.acceptedAssetId;
-                return (
-                  <button
-                    key={a.acceptedAssetId}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => setSelected(a)}
-                    className={`min-h-10 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
-                      on
-                        ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
-                        : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
-                    }`}
-                  >
-                    {a.asset.symbol}
-                  </button>
-                );
-              })}
+    <div className="mt-8">
+      <Card elevated className="reveal reveal-1">
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (amountOk && selected) create();
+          }}
+        >
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium">Pay with</legend>
+            <div className="flex flex-col gap-2">
+              {grouped.map((g) => (
+                <div key={g.name} className="flex flex-wrap items-center gap-2">
+                  <span className="w-24 shrink-0 text-sm text-[color:var(--color-muted)]">
+                    {g.name}
+                  </span>
+                  {g.items.map((a) => {
+                    const on = selected?.acceptedAssetId === a.acceptedAssetId;
+                    return (
+                      <button
+                        key={a.acceptedAssetId}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setSelected(a)}
+                        className={`min-h-10 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
+                          on
+                            ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
+                            : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
+                        }`}
+                      >
+                        {a.asset.symbol}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </fieldset>
+          </fieldset>
 
-      <div>
-        <Label htmlFor="amount">
-          Amount{selected ? ` in ${selected.asset.symbol}` : ''}
-        </Label>
-        <Input
-          id="amount"
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="0.00"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
-          className="tabular min-h-14 text-3xl font-semibold tracking-tight"
-          aria-describedby="amount-hint"
-        />
-        <Muted className="mt-1.5">
-          <span id="amount-hint">
-            {selected
-              ? `Sent as ${selected.asset.symbol} on ${selected.chain.name}. No conversion.`
-              : ''}
-          </span>
-        </Muted>
-      </div>
+          <div>
+            <Label htmlFor="amount">
+              Amount{selected ? ` in ${selected.asset.symbol}` : ''}
+            </Label>
+            <Input
+              id="amount"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
+              className="tabular min-h-14 text-3xl font-semibold tracking-tight"
+              aria-describedby="amount-hint"
+            />
+            <Muted className="mt-1.5">
+              <span id="amount-hint">
+                {selected
+                  ? `Sent as ${selected.asset.symbol} on ${selected.chain.name}. No conversion.`
+                  : ''}
+              </span>
+            </Muted>
+          </div>
 
-      <div>
-        <Label htmlFor="note">Note (optional)</Label>
-        <Input
-          id="note"
-          maxLength={140}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="What this is for"
-        />
-      </div>
+          <div>
+            <Label htmlFor="note">Note (optional)</Label>
+            <Input
+              id="note"
+              maxLength={140}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="What this is for"
+            />
+          </div>
 
-      <div>
-        <Label htmlFor="payerName">Your name (optional)</Label>
-        <Input
-          id="payerName"
-          maxLength={128}
-          value={payerName}
-          onChange={(e) => setPayerName(e.target.value)}
-        />
-      </div>
+          <div>
+            <Label htmlFor="payerName">Your name (optional)</Label>
+            <Input
+              id="payerName"
+              maxLength={128}
+              value={payerName}
+              onChange={(e) => setPayerName(e.target.value)}
+            />
+          </div>
 
-      <ErrorText>{error}</ErrorText>
-      <Button
-        type="submit"
-        disabled={!amountOk || !selected || busy}
-        className="lift min-h-12 text-base"
-      >
-        {busy ? 'One moment…' : 'Continue'}
-      </Button>
-      <Muted className="text-center">
+          <ErrorText>{error}</ErrorText>
+          <Button
+            type="submit"
+            disabled={!amountOk || !selected || busy}
+            className="lift min-h-12 text-base"
+          >
+            {busy ? 'One moment…' : 'Continue'}
+          </Button>
+        </form>
+      </Card>
+      <Muted className="mt-3 text-center text-xs">
         Funds go straight to {profile.displayName || profile.userName}.{' '}
         {brandName} never holds them.
       </Muted>
-    </form>
+    </div>
   );
 }
 

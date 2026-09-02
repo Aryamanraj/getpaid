@@ -41,7 +41,7 @@ export const Input = forwardRef<
       ref={ref}
       {...props}
       className={cx(
-        'min-h-11 w-full rounded-[var(--radius)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-2.5 text-[16px] outline-none transition-[border-color,box-shadow] duration-200 hover:border-[color:var(--color-border-strong)] focus:border-[color:var(--color-accent)] focus:[box-shadow:0_0_0_3px_var(--color-accent-ring)]',
+        'min-h-11 w-full rounded-[var(--radius)] border border-[color:var(--color-border)] bg-transparent px-4 py-2.5 text-[16px] outline-none transition-[border-color,box-shadow] duration-200 hover:border-[color:var(--color-border-strong)] focus:border-[color:var(--color-accent)] focus:[box-shadow:0_0_0_3px_var(--color-accent-ring)]',
         className,
       )}
     />
