@@ -135,21 +135,28 @@ function SolanaPay({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // With several Wallet Standard wallets installed (MetaMask registers a
+  // Solana facade too), the payer picks — auto-connecting the first one
+  // regularly grabs the wrong wallet.
+  const installed = wallet.wallets.filter((x) => x.readyState === 'Installed');
+
+  async function connectWith(w: (typeof wallet.wallets)[number]) {
+    setBusy(true);
+    setError(null);
+    try {
+      wallet.select(w.adapter.name);
+      await w.adapter.connect();
+    } catch (e) {
+      setError(friendly((e as Error).message));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function pay() {
     setBusy(true);
     setError(null);
     try {
-      if (!wallet.connected) {
-        const w =
-          wallet.wallets.find((x) => x.readyState === 'Installed') ??
-          wallet.wallets[0];
-        if (!w)
-          throw new Error('No Solana wallet found — use the QR code instead');
-        wallet.select(w.adapter.name);
-        await w.adapter.connect();
-        setBusy(false);
-        return;
-      }
       const from = wallet.publicKey;
       if (!from) throw new Error('Wallet has no public key');
 
@@ -192,17 +199,38 @@ function SolanaPay({
 
   return (
     <div className="flex flex-col gap-2">
-      <Button type="button" onClick={pay} disabled={busy}>
-        {busy
-          ? 'Check your wallet…'
-          : wallet.connected
-            ? `Pay ${request.amountDisplay} ${request.asset.symbol}`
-            : 'Connect wallet to pay'}
-      </Button>
+      {wallet.connected ? (
+        <Button type="button" onClick={pay} disabled={busy}>
+          {busy
+            ? 'Check your wallet…'
+            : `Pay ${request.amountDisplay} ${request.asset.symbol}`}
+        </Button>
+      ) : installed.length === 0 ? (
+        <Button
+          type="button"
+          onClick={() =>
+            setError('No Solana wallet found — use the QR code instead')
+          }
+          disabled={busy}
+        >
+          Connect wallet to pay
+        </Button>
+      ) : (
+        installed.map((w) => (
+          <Button
+            key={w.adapter.name}
+            type="button"
+            onClick={() => connectWith(w)}
+            disabled={busy}
+          >
+            {busy ? 'Check your wallet…' : `Pay with ${w.adapter.name}`}
+          </Button>
+        ))
+      )}
       <ErrorText>{error}</ErrorText>
       {!wallet.connected ? (
         <Muted className="text-center">
-          Phantom, Solflare, Backpack, or any Solana wallet.
+          Or scan the QR code with any Solana wallet.
         </Muted>
       ) : null}
     </div>

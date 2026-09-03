@@ -27,13 +27,20 @@ export function WalletSignIn({
   link?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<'evm' | 'solana' | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const evm = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
   const solana = useWallet();
+
+  // One button per detected wallet: with several Wallet Standard wallets
+  // installed (MetaMask registers a Solana facade too), auto-picking the
+  // first regularly grabs the wrong one.
+  const installedSolana = solana.wallets.filter(
+    (w) => w.readyState === 'Installed',
+  );
 
   async function evmSignIn() {
     setError(null);
@@ -77,26 +84,26 @@ export function WalletSignIn({
     }
   }
 
-  async function solanaSignIn() {
+  async function solanaSignIn(w: (typeof solana.wallets)[number]) {
     setError(null);
-    setBusy('solana');
+    setBusy(w.adapter.name);
     try {
-      // The `solana` context is a render-time snapshot: right after a
-      // first-time connect its publicKey/signMessage still reflect the
-      // disconnected state, so sign with the adapter we just connected.
-      let adapter = solana.wallet?.adapter;
-      if (!solana.connected || !adapter?.publicKey) {
-        const w =
-          solana.wallets.find((x) => x.readyState === 'Installed') ??
-          solana.wallets[0];
-        if (!w) throw new Error('No Solana wallet found');
-        solana.select(w.adapter.name);
-        await w.adapter.connect();
-        adapter = w.adapter;
+      // Sign with the adapter we just connected — the `solana` context is a
+      // render-time snapshot and lags a first-time connect.
+      const adapter = w.adapter;
+      if (!adapter.connected || !adapter.publicKey) {
+        solana.select(adapter.name);
+        await adapter.connect();
       }
-      const pubkey = adapter.publicKey ?? solana.publicKey;
-      if (!pubkey || !(adapter && 'signMessage' in adapter))
-        throw new Error('Wallet cannot sign messages');
+      const pubkey = adapter.publicKey;
+      if (!pubkey) throw new Error(`${adapter.name} did not return an address`);
+      if (
+        !('signMessage' in adapter) ||
+        typeof (adapter as { signMessage?: unknown }).signMessage !== 'function'
+      )
+        throw new Error(
+          `${adapter.name} cannot sign messages — try another wallet`,
+        );
       const address = pubkey.toBase58();
 
       const challenge = await api<WalletChallenge>('/auth/getNonce', {
@@ -108,6 +115,7 @@ export function WalletSignIn({
           signMessage: (m: Uint8Array) => Promise<Uint8Array>;
         }
       ).signMessage(new TextEncoder().encode(challenge.message));
+
       const result = await api<LoginResult>('/auth/walletLogin', {
         method: 'POST',
         auth: link,
@@ -141,18 +149,47 @@ export function WalletSignIn({
             ? `Sign in as ${shortAddress(evm.address)}`
             : 'Ethereum wallet'}
       </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        onClick={solanaSignIn}
-        disabled={busy !== null}
-      >
-        {busy === 'solana'
-          ? 'Check your wallet…'
-          : solana.publicKey
-            ? `Sign in as ${shortAddress(solana.publicKey.toBase58())}`
-            : 'Solana wallet'}
-      </Button>
+      {installedSolana.length === 0 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() =>
+            setError(
+              'No Solana wallet found — install Phantom or Solflare, or use email.',
+            )
+          }
+          disabled={busy !== null}
+        >
+          Solana wallet
+        </Button>
+      ) : (
+        installedSolana.map((w) => (
+          <Button
+            key={w.adapter.name}
+            type="button"
+            variant="ghost"
+            onClick={() => solanaSignIn(w)}
+            disabled={busy !== null}
+          >
+            {/* biome-ignore lint/performance/noImgElement: wallet-supplied data URI */}
+            <img
+              src={w.adapter.icon}
+              alt=""
+              width={16}
+              height={16}
+              className="rounded"
+            />
+            {busy === w.adapter.name
+              ? 'Check your wallet…'
+              : w.adapter.connected && w.adapter.publicKey
+                ? `Sign in as ${shortAddress(w.adapter.publicKey.toBase58())}`
+                : w.adapter.name}
+            <span className="text-xs text-[color:var(--color-muted)]">
+              · Solana
+            </span>
+          </Button>
+        ))
+      )}
       {evm.address ? (
         <button
           type="button"

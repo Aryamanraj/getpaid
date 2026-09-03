@@ -33,7 +33,9 @@ export function useMe() {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // No setLoading(true) here: only the initial load shows the skeleton.
+    // A refetch after a save swaps state in place instead of flashing the
+    // whole page back to placeholders.
     try {
       setMe(await api<MeResponse>('/user/getMe', { auth: true }));
       setError(null);
