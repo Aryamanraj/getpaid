@@ -36,6 +36,8 @@ import { VerificationAttempt } from './ops/entities/verification-attempt.entity'
 import { VerificationAttemptRepoService } from './ops/verification-attempt-repo.service';
 import { AdminActionLog } from './ops/entities/admin-action-log.entity';
 import { AdminActionLogRepoService } from './ops/admin-action-log-repo.service';
+import { BlogArticle } from './blogs/entities/blog-article.entity';
+import { BlogArticleRepoService } from './blogs/blog-article-repo.service';
 
 export const entities = [
   // core
@@ -58,6 +60,8 @@ export const entities = [
   VerificationJob,
   VerificationAttempt,
   AdminActionLog,
+  // blogs — owned by the newsmith pipeline, read-only here
+  BlogArticle,
 ];
 
 const repoServices = [
@@ -81,6 +85,8 @@ const repoServices = [
   VerificationJobRepoService,
   VerificationAttemptRepoService,
   AdminActionLogRepoService,
+  // blogs
+  BlogArticleRepoService,
 ];
 
 @Module({

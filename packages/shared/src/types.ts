@@ -131,6 +131,31 @@ export interface PublicProfile {
   acceptedAssets: ProfileAcceptedAsset[];
 }
 
+// ─── Blog ────────────────────────────────────────────────────────────────────
+
+export interface BlogPostSummary {
+  slug: string;
+  title: string;
+  excerpt: string;
+  topic: string;
+  tags: string[];
+  heroImageUrl?: string;
+  publishedAt: string;
+}
+
+export interface BlogPost extends BlogPostSummary {
+  metaDescription: string;
+  bodyMarkdown: string;
+  sources: Array<{ title: string; url: string }>;
+}
+
+export interface BlogPostList {
+  items: BlogPostSummary[];
+  page: number;
+  hasMore: boolean;
+  total: number;
+}
+
 // ─── Payments ────────────────────────────────────────────────────────────────
 
 export type PaymentRequestStatus =

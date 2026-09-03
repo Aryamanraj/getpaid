@@ -6,6 +6,7 @@ import * as winston from 'winston';
 import configuration from '../../config/configuration';
 import { DBModule } from '../db/db.module';
 import { RepoModule, entities } from '../repo/repo.module';
+import { BlogModule } from '../blog/blog.module';
 import { AesEncryptionModule } from '../common/services/aes-encryption.module';
 import { CacheModule } from '../cache/cache.module';
 import { PlatformConfigModule } from '../platform-config/platform-config.module';
@@ -67,6 +68,7 @@ import { AdminModule } from '../admin/admin.module';
     ChainModule,
     VerificationModule,
     AdminModule,
+    BlogModule,
   ],
   controllers: [],
   providers: [],

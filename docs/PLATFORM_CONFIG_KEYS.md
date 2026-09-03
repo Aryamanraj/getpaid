@@ -122,6 +122,17 @@ All public — they gate UI.
 | `web.bootstrapCacheTtlSeconds` | number | | ✅ | `300` | How long a domain edit takes to appear |
 | `web.solanaRpcUrl` | string | | ✅ | `https://api.mainnet-beta.solana.com` | RPC the browser uses to build and send Solana transactions |
 
+## blog
+
+Articles are written by the newsmith pipeline into `blogs.articles` (a schema
+that pipeline owns — the API only reads it). A row with
+`status = 'published'` and `published_at <= now()` is public; there is no
+separate publish step.
+
+| Key | Type | Secret | Public | Default | Description |
+|---|---|:-:|:-:|---|---|
+| `blog.enabledHosts` | string[] | | ✅ | `["recv.to"]` | Hosts whose `/blog` is live. Others 404 |
+
 ## rateLimit
 
 | Key | Type | Secret | Public | Default | Description |

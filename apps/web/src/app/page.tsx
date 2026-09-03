@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBootstrap, getHost } from '@/lib/bootstrap';
+import { blogEnabled } from '@/lib/blog';
 import { ClaimForm } from '@/components/claim-form';
 import { HomeNav } from '@/components/home-nav';
 
@@ -44,7 +45,17 @@ export default async function HomePage() {
         <span className="text-[15px] font-semibold tracking-tight">
           {domain.brandName}
         </span>
-        <HomeNav />
+        <div className="flex items-center gap-2">
+          {blogEnabled(bootstrap, domain.host) ? (
+            <Link
+              href="/blog"
+              className="inline-flex min-h-9 items-center rounded-full px-3.5 text-sm font-medium text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
+            >
+              Blog
+            </Link>
+          ) : null}
+          <HomeNav />
+        </div>
       </header>
 
       <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-8">
