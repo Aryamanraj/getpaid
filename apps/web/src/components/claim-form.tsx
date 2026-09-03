@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { checkUserNameShape, normaliseUserName } from '@recv/shared';
 import { api, currentHost } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { useIsAuthed } from '@/lib/use-auth';
 import { ErrorText } from '@/components/ui';
 
@@ -156,6 +157,7 @@ export function ClaimForm({ host }: { host: string }) {
         body: { userName: name },
         auth: true,
       });
+      track('username claimed', { host: currentHost() });
       router.push('/dashboard');
     } catch (e) {
       setError((e as Error).message);

@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans, Inter } from 'next/font/google';
 import { getBootstrap, getHost } from '@/lib/bootstrap';
 import { themeToCssVars } from '@/lib/theme';
 import { Providers } from '@/components/providers';
+import { Analytics } from '@/components/analytics';
 import './globals.css';
 
 /*
@@ -65,6 +66,14 @@ export default async function RootLayout({
       </head>
       <body className="font-sans">
         <Providers solanaRpcUrl={solanaRpcUrl}>{children}</Providers>
+        <Analytics
+          posthogKey={
+            (bootstrap?.publicConfig?.['analytics.posthogKey'] as string) ?? ''
+          }
+          posthogHost={
+            (bootstrap?.publicConfig?.['analytics.posthogHost'] as string) ?? ''
+          }
+        />
       </body>
     </html>
   );

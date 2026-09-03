@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   PaymentRequestView,
   ProfileAcceptedAsset,
   PublicProfile,
 } from '@recv/shared';
 import { api, currentHost } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { Button, ErrorText, Input, Label, Muted } from '@/components/ui';
 import { Qr } from '@/components/qr';
 import {
@@ -84,6 +85,11 @@ function RequestForm({
     setBusy(true);
     setError(null);
     try {
+      track('payment request created', {
+        asset: selected.asset.symbol,
+        chain: selected.chain.name,
+        host: currentHost(),
+      });
       onCreated(
         await api<PaymentRequestView>('/payment/createRequest', {
           method: 'POST',
@@ -258,10 +264,26 @@ function PayPanel({
   const isTron = request.chain.namespace === 'tron';
   const awaiting = request.status === 'pending';
 
+  const confirmedTracked = useRef(false);
+  useEffect(() => {
+    if (request.status === 'confirmed' && !confirmedTracked.current) {
+      confirmedTracked.current = true;
+      track('payment confirmed', {
+        chain: request.chain.name,
+        asset: request.asset.symbol,
+      });
+    }
+  }, [request.status, request.chain.name, request.asset.symbol]);
+
   async function submit(txHash: string, submittedVia: 'wallet' | 'manual') {
     setBusy(true);
     setError(null);
     try {
+      track('transaction submitted', {
+        via: submittedVia,
+        chain: request.chain.name,
+        asset: request.asset.symbol,
+      });
       setRequest(
         await api<PaymentRequestView>('/payment/submitTransaction', {
           method: 'POST',
