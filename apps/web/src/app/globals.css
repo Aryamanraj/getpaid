@@ -172,6 +172,22 @@ a {
   animation: draw 0.5s var(--ease-out-soft) 0.15s forwards;
 }
 
+/* Loading placeholder blocks. */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.skeleton {
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
 /* ── Article prose (the blog) ───────────────────────────────────────────
  * Hand-rolled instead of a typography plugin: only what the pipeline's
  * markdown actually produces, in the site's own type.

@@ -25,10 +25,10 @@ import {
   Mono,
   Muted,
   Page,
-  Spinner,
 } from '@/components/ui';
 import { PENDING_CLAIM_KEY } from '@/components/claim-form';
 import { StatusBadge } from '@/components/payment-status';
+import { MiniCopy } from '@/components/ledger';
 import { WalletSignIn } from '@/components/wallet-sign-in';
 
 interface PayoutAddressRow {
@@ -51,6 +51,13 @@ interface Methods {
   payoutAddresses: PayoutAddressRow[];
   acceptedAssets: AcceptedRow[];
 }
+
+const NAMESPACE_TAG: Record<string, string> = {
+  eip155: 'EVM',
+  solana: 'Solana',
+  bip122: 'Bitcoin',
+  tron: 'Tron',
+};
 
 const NAMESPACE_LABEL: Record<string, string> = {
   eip155: 'Ethereum / Base / Arbitrum / Polygon',
@@ -129,7 +136,13 @@ export default function DashboardPage() {
   if (loading || !me) {
     return (
       <Page wide>
-        <Spinner />
+        <div role="status" aria-busy="true" aria-label="Loading dashboard">
+          <div className="skeleton h-5 w-24" />
+          <div className="skeleton mt-3 h-9 w-64" />
+          <div className="skeleton mt-8 h-20 w-full" />
+          <div className="skeleton mt-6 h-56 w-full" />
+          <div className="skeleton mt-6 h-40 w-full" />
+        </div>
       </Page>
     );
   }
@@ -494,25 +507,45 @@ function PayoutSection({
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
-                <Muted>
-                  {NAMESPACE_LABEL[pa.namespace] ?? pa.namespace}
-                  {pa.label ? ` · ${pa.label}` : ''}
-                </Muted>
-                <Mono className="text-sm">{pa.address}</Mono>
-                {pa.isProven ? (
-                  <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-success)] bg-[color:var(--color-success-soft)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-success)]">
-                    <span
-                      aria-hidden="true"
-                      className="h-1.5 w-1.5 rounded-full bg-current"
-                    />
-                    Verified wallet
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md border border-[color:var(--color-border)] px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-[0.1em] text-[color:var(--color-muted)] uppercase">
+                    {NAMESPACE_TAG[pa.namespace] ?? pa.namespace}
                   </span>
-                ) : (
+                  {pa.label ? (
+                    <Muted className="text-xs">{pa.label}</Muted>
+                  ) : null}
+                </div>
+                <div className="mt-1.5 flex items-center gap-1 font-mono text-sm">
+                  <span className="truncate" title={pa.address}>
+                    {shortAddress(pa.address, 10, 8)}
+                  </span>
+                  <MiniCopy value={pa.address} label="address" />
+                  {pa.isProven ? (
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-label="Verified wallet"
+                      className="shrink-0 text-[color:var(--color-success)]"
+                    >
+                      <title>Verified wallet</title>
+                      <circle cx="12" cy="12" r="10" fill="currentColor" />
+                      <path
+                        d="M7.5 12.5l3 3 6-7"
+                        stroke="var(--color-background)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : null}
+                </div>
+                {!pa.isProven ? (
                   <Muted className="mt-1 text-xs">
-                    Unverified — sign in with this wallet to prove you control
-                    it
+                    Unverified — sign in with this wallet to verify it
                   </Muted>
-                )}
+                ) : null}
               </div>
               <button
                 type="button"
@@ -528,7 +561,9 @@ function PayoutSection({
                   key={chain.chainId}
                   className="flex flex-wrap items-center gap-2"
                 >
-                  <span className="w-28 shrink-0 text-sm">{chain.name}</span>
+                  <span className="w-24 shrink-0 text-[13px] text-[color:var(--color-muted)]">
+                    {chain.name}
+                  </span>
                   {assetsFor(chain).map((asset) => {
                     const row = methods.acceptedAssets.find(
                       (a) => a.assetId === asset.assetId,
@@ -544,12 +579,29 @@ function PayoutSection({
                         onClick={() =>
                           toggle(asset, pa.payoutAddressId, !onThis)
                         }
-                        className={`min-h-9 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
+                        className={`inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 text-[13px] font-medium transition-[background-color,border-color,color,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
                           onThis
-                            ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
-                            : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
+                            ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-foreground)]'
+                            : 'border-[color:var(--color-border)] text-[color:var(--color-muted)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-foreground)]'
                         }`}
                       >
+                        {onThis ? (
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M5 13l4 4L19 7"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        ) : null}
                         {asset.symbol}
                       </button>
                     );
@@ -617,7 +669,9 @@ function PayoutSection({
                 key={chain.chainId}
                 className="flex flex-wrap items-center gap-2"
               >
-                <span className="w-28 shrink-0 text-sm">{chain.name}</span>
+                <span className="w-24 shrink-0 text-[13px] text-[color:var(--color-muted)]">
+                  {chain.name}
+                </span>
                 {assetsFor(chain).map((asset) => {
                   const on = selected.includes(asset.assetId);
                   return (
@@ -632,12 +686,29 @@ function PayoutSection({
                             : [...s, asset.assetId],
                         )
                       }
-                      className={`min-h-9 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
+                      className={`inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 text-[13px] font-medium transition-[background-color,border-color,color,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
                         on
-                          ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
-                          : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface)]'
+                          ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-foreground)]'
+                          : 'border-[color:var(--color-border)] text-[color:var(--color-muted)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-foreground)]'
                       }`}
                     >
+                      {on ? (
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M5 13l4 4L19 7"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : null}
                       {asset.symbol}
                     </button>
                   );
