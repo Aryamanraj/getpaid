@@ -132,6 +132,7 @@ separate publish step.
 | Key | Type | Secret | Public | Default | Description |
 |---|---|:-:|:-:|---|---|
 | `blog.enabledHosts` | string[] | | ✅ | `["recv.to"]` | Hosts whose `/blog` is live. Others 404 |
+| `blog.indexNowKey` | string | | ✅ | `""` | IndexNow key served at `/indexnow.txt`; the same value goes in newsmith's `publish.indexnow_key`. Empty = off |
 
 ## rateLimit
 
