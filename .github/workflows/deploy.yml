@@ -1,4 +1,6 @@
-# Push to main → lint/typecheck/test → SSH to the server → deploy/deploy.sh.
+# Push to main → checks and image builds run in parallel → SSH to the server,
+# which pulls the prebuilt images and swaps (deploy/deploy.sh). The server
+# never compiles anything.
 #
 # First-time server setup is manual (clone, secrets, nginx — docs/DEPLOY.md);
 # after that this workflow owns updates. Repository secrets required:
@@ -8,6 +10,10 @@
 #   DEPLOY_SSH_KEY   private key for that user (ed25519, no passphrase)
 #   DEPLOY_PATH      absolute path of the clone, e.g. /opt/getpaid
 #   DEPLOY_PORT     (optional) ssh port, defaults to 22
+#
+# Images live in GHCR (ghcr.io/aryamanraj/getpaid-{web,api}) and must be
+# PUBLIC packages so the server can pull anonymously — one-time visibility
+# flip after the first push.
 
 name: deploy
 
@@ -38,8 +44,46 @@ jobs:
         working-directory: apps/web
       - run: yarn api test
 
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/aryamanraj/getpaid-api:latest
+            ghcr.io/aryamanraj/getpaid-api:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || 'https://api.payee.id/api/v1' }}
+          tags: |
+            ghcr.io/aryamanraj/getpaid-web:latest
+            ghcr.io/aryamanraj/getpaid-web:${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
   deploy:
-    needs: checks
+    needs: [checks, build]
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -50,7 +94,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          command_timeout: 30m
+          command_timeout: 15m
           script: |
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"

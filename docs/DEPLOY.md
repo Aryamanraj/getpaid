@@ -180,12 +180,21 @@ published ranges and `CF-Connecting-IP`.
 ## 11. CI/CD (GitHub Actions)
 
 `.github/workflows/deploy.yml` deploys the nginx stack on every push to
-`main` (or manually via *Run workflow*): lint, typecheck, and tests gate the
-deploy; then it SSHes to the server, hard-resets the clone to `origin/main`,
-and runs `deploy/deploy.sh` — build images, run migrations against the new
-image (§8's rule M10 makes migrate-before-swap the safe order), swap
+`main` (or manually via *Run workflow*). Checks (lint, typecheck, tests) and
+Docker image builds run **in parallel**; images are pushed to GHCR
+(`ghcr.io/aryamanraj/getpaid-{web,api}`, public packages) with layer caching.
+Deploy then SSHes to the server, hard-resets the clone to `origin/main`, and
+runs `deploy/deploy.sh` — pull the prebuilt images, run migrations against
+the new image (§8's rule M10 makes migrate-before-swap the safe order), swap
 containers, and poll `/api/v1/health` until healthy, dumping API logs on
-failure.
+failure. The server never compiles; `deploy/deploy.sh --build`
+(`make deploy-nginx-build`) is the local-build fallback.
+
+One-time after the first image push: make both GHCR packages public
+(github.com → your profile → Packages → package settings → change
+visibility) so the server can pull anonymously. The web image bakes
+`NEXT_PUBLIC_API_URL` at build time — override the default via an Actions
+repository **variable** of that name if it ever changes.
 
 One-time setup:
 

@@ -1,0 +1,8 @@
+# Pull-mode override: run prebuilt images from GHCR instead of building on
+# the server. CI builds and pushes them; deploy.sh pulls. The build: blocks
+# in docker-compose.prod.yml stay for the --build fallback.
+services:
+  web:
+    image: ghcr.io/aryamanraj/getpaid-web:latest
+  api:
+    image: ghcr.io/aryamanraj/getpaid-api:latest

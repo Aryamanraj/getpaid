@@ -30,8 +30,11 @@ prod-migrate: ## Run migrations + seeds inside the production api container
 prod-logs: ## Tail production logs
 	docker compose -f docker-compose.prod.yml --env-file deploy/.env.prod logs -f --tail=100
 
-deploy-nginx: ## Deploy the nginx-fronted stack: build, migrate, start, health-check
+deploy-nginx: ## Deploy the nginx-fronted stack: pull CI images, migrate, start
 	bash deploy/deploy.sh
+
+deploy-nginx-build: ## Same, but build images on this machine (no-CI fallback)
+	bash deploy/deploy.sh --build
 
 logs-nginx: ## Tail logs of the nginx-fronted stack
 	docker compose -f docker-compose.prod.yml -f deploy/docker-compose.nginx.yml --env-file deploy/.env.prod logs -f --tail=100
