@@ -1,14 +1,16 @@
 'use client';
 
 import type { PaymentRequestView } from '@recv/shared';
-import { Card, CopyButton, Mono, Muted } from '@/components/ui';
+import { CopyButton, Muted } from '@/components/ui';
+import { MiniCopy, Row } from '@/components/ledger';
 import {
   StatusBadge,
   StatusHint,
-  TransactionDetails,
   usePaymentRequest,
 } from '@/components/payment-status';
+import { shortAddress } from '@/lib/format';
 
+/** The receipt, styled as one — a slip with a tear line and a stamp. */
 export function Receipt({
   initial,
   brandName,
@@ -18,48 +20,86 @@ export function Receipt({
 }) {
   const [request] = usePaymentRequest(initial);
   const url = typeof window === 'undefined' ? '' : window.location.href;
+  const tx = request.transaction;
 
   return (
     <>
-      <div className="reveal mt-6 flex items-start justify-between gap-3">
-        <div>
-          <Muted>Receipt · {brandName}</Muted>
-          <h1 className="tabular text-3xl font-semibold tracking-tight">
-            {request.amountDisplay}{' '}
-            <span className="text-xl font-medium text-[color:var(--color-muted)]">
-              {request.asset.symbol}
-            </span>
-          </h1>
-          <Muted>
-            on {request.chain.name} to{' '}
-            {request.payee.displayName || request.payee.userName}
-          </Muted>
-        </div>
+      <div className="mt-6 flex items-center justify-between">
+        <p className="font-mono text-[11px] font-medium tracking-[0.12em] text-[color:var(--color-muted)] uppercase">
+          Receipt · {brandName}
+        </p>
         <StatusBadge status={request.status} />
       </div>
 
-      <Card elevated className="reveal reveal-1 mt-6">
-        <StatusHint request={request} />
-        <TransactionDetails request={request} />
-        <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-[color:var(--color-border)] pt-3 text-sm">
-          <dt className="text-[color:var(--color-muted)]">To</dt>
-          <dd>
-            <Mono>{request.toAddress}</Mono>
-          </dd>
-          {request.note ? (
-            <>
-              <dt className="text-[color:var(--color-muted)]">Note</dt>
-              <dd>{request.note}</dd>
-            </>
+      <div className="slip relative mt-4 p-5">
+        {request.status === 'confirmed' ? (
+          <span className="stamp absolute -top-3 right-4 bg-[color:var(--color-surface)] text-[color:var(--color-success)]">
+            Verified on-chain
+          </span>
+        ) : null}
+
+        <p className="tabular text-center text-[clamp(2.5rem,12vw,3.5rem)] leading-none font-semibold tracking-tight">
+          {request.amountDisplay}
+        </p>
+        <p className="mt-2 text-center font-mono text-sm text-[color:var(--color-muted)]">
+          {request.asset.symbol} · {request.chain.name}
+        </p>
+
+        <div className="tear mt-5 flex flex-col gap-2.5 pt-5">
+          <Row label="To">
+            {request.payee.displayName || request.payee.userName}
+          </Row>
+          <Row label="Address">
+            <span className="truncate" title={request.toAddress}>
+              {shortAddress(request.toAddress, 10, 8)}
+            </span>
+            <MiniCopy value={request.toAddress} label="address" />
+          </Row>
+          {tx ? (
+            <Row label="Tx">
+              <a
+                href={tx.explorerUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="truncate underline underline-offset-2"
+                title={tx.txHash}
+              >
+                {shortAddress(tx.txHash, 10, 8)}
+              </a>
+            </Row>
           ) : null}
-          <dt className="text-[color:var(--color-muted)]">Created</dt>
-          <dd>{new Date(request.createdAt).toLocaleString()}</dd>
-          <dt className="text-[color:var(--color-muted)]">Reference</dt>
-          <dd>
-            <Mono>{request.publicId}</Mono>
-          </dd>
-        </dl>
-      </Card>
+          {tx?.fromAddress ? (
+            <Row label="From">{shortAddress(tx.fromAddress, 8, 6)}</Row>
+          ) : null}
+          {request.note ? <Row label="Note">{request.note}</Row> : null}
+          <Row label="Created">
+            {new Date(request.createdAt).toLocaleString()}
+          </Row>
+          {tx?.verifiedAt ? (
+            <Row label="Verified">
+              {new Date(tx.verifiedAt).toLocaleString()}
+            </Row>
+          ) : null}
+          <Row label="Ref">{request.publicId}</Row>
+        </div>
+
+        {tx?.status === 'pending' ? (
+          <Muted className="mt-4 font-mono text-xs">
+            {tx.confirmations} / {tx.requiredConfirmations} confirmations —
+            this page updates by itself.
+          </Muted>
+        ) : null}
+        {tx?.mismatchReason ? (
+          <p className="mt-4 text-sm text-[color:var(--color-danger)]">
+            {tx.mismatchReason}
+          </p>
+        ) : null}
+        {request.status !== 'confirmed' ? (
+          <div className="mt-4">
+            <StatusHint request={request} />
+          </div>
+        ) : null}
+      </div>
 
       <div className="mt-4 flex gap-2">
         {url ? <CopyButton value={url} label="Copy receipt link" /> : null}

@@ -180,6 +180,8 @@ export class UserService {
         displayName: user.DisplayName,
         bio: user.Bio,
         avatarUrl: user.AvatarUrl,
+        accentHue: user.AccentHue ?? undefined,
+        presetAmounts: user.PresetAmounts ?? undefined,
         domainId: user.DomainID,
         identities: (identities ?? []).map((i) => ({
           authIdentityId: i.AuthIdentityID,
@@ -214,6 +216,9 @@ export class UserService {
       if (dto.displayName !== undefined) user.DisplayName = dto.displayName;
       if (dto.bio !== undefined) user.Bio = dto.bio;
       if (dto.avatarUrl !== undefined) user.AvatarUrl = dto.avatarUrl;
+      if (dto.accentHue !== undefined) user.AccentHue = dto.accentHue;
+      if (dto.presetAmounts !== undefined)
+        user.PresetAmounts = dto.presetAmounts;
 
       const saved = await Promisify<User>(this.userRepo.create(user));
       return await this.getMe(saved.UserID);
@@ -268,6 +273,8 @@ export class UserService {
         displayName: user.DisplayName,
         bio: user.Bio,
         avatarUrl: user.AvatarUrl,
+        accentHue: user.AccentHue ?? undefined,
+        presetAmounts: user.PresetAmounts ?? undefined,
         acceptedAssets: (accepted ?? []).map((a) => ({
           acceptedAssetId: a.AcceptedAssetID,
           asset: {

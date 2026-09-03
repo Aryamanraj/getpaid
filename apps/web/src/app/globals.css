@@ -172,6 +172,60 @@ a {
   animation: draw 0.5s var(--ease-out-soft) 0.15s forwards;
 }
 
+/* ── Ledger / receipt vocabulary (the pay + receipt pages) ──────────────
+ * Dotted leaders between a label and its value, a slip with notched tear
+ * lines, and a rubber-stamp mark for the verified state.
+ */
+.leader {
+  flex: 1;
+  margin: 0 0.5em 0.28em;
+  border-bottom: 2px dotted var(--color-border-strong);
+  min-width: 1.5rem;
+}
+
+.slip {
+  position: relative;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.tear {
+  position: relative;
+  border-top: 1.5px dashed var(--color-border-strong);
+}
+.tear::before,
+.tear::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--color-background);
+  border: 1px solid var(--color-border-strong);
+}
+.tear::before {
+  left: -14px;
+}
+.tear::after {
+  right: -14px;
+}
+
+.stamp {
+  display: inline-block;
+  transform: rotate(-6deg);
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  padding: 0.2em 0.6em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 /* Whisper-subtle dot grid, derived from the theme foreground so it adapts
  * to any domain palette and to dark mode. Fades out toward the bottom. */
 .bg-dots {

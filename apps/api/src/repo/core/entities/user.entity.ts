@@ -48,6 +48,20 @@ export class User extends BaseEntity {
   AvatarUrl: string;
 
   @ApiProperty({
+    nullable: true,
+    description: 'Page accent hue 0-359. NULL derives one from the username',
+  })
+  @Column({ type: 'smallint', nullable: true })
+  AccentHue: number;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Quick-tap amounts, [{assetId, amount}] — amount is a string',
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  PresetAmounts: Array<{ assetId: number; amount: string }>;
+
+  @ApiProperty({
     description:
       'The domain this account belongs to. Domains are separate products',
   })

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { PublicProfile } from '@recv/shared';
 import { getBootstrap, getHost } from '@/lib/bootstrap';
-import { userAccent } from '@/lib/avatar';
+import { accentFor } from '@/lib/avatar';
 import { PayFlow } from '@/components/pay-flow';
 
 const API_URL =
@@ -72,12 +72,22 @@ export default async function ProfilePage({ params }: PageProps) {
   if (!bootstrap || !profile) notFound();
 
   const name = profile.displayName || profile.userName;
-  const accent = userAccent(profile.userName);
+  const accent = accentFor(profile.userName, profile.accentHue);
   const verified = profile.acceptedAssets.some((a) => a.isProven);
 
   return (
-    <main className="bg-dots mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-12 sm:px-6 sm:py-16">
-      <header className="reveal flex items-center gap-4">
+    <main
+      className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-12 sm:px-6 sm:py-16"
+      style={
+        {
+          // The payee's one customization knob recolours every accent on
+          // their page — buttons, chips, caret — through the normal tokens.
+          '--color-accent': accent.strong,
+          '--color-accent-foreground': '#ffffff',
+        } as React.CSSProperties
+      }
+    >
+      <header className="flex items-center gap-4">
         {profile.avatarUrl ? (
           // biome-ignore lint/performance/noImgElement: user-supplied remote URL
           <img
@@ -90,7 +100,7 @@ export default async function ProfilePage({ params }: PageProps) {
         ) : (
           <div
             aria-hidden="true"
-            className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl text-2xl font-semibold"
+            className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl font-mono text-2xl font-semibold"
             style={{ background: accent.bg, color: accent.fg }}
           >
             {name.charAt(0).toUpperCase()}
@@ -130,7 +140,7 @@ export default async function ProfilePage({ params }: PageProps) {
       </header>
 
       {profile.bio ? (
-        <p className="reveal reveal-1 mt-4 text-[15px] leading-relaxed text-[color:var(--color-muted)]">
+        <p className="mt-4 text-[15px] leading-relaxed text-[color:var(--color-muted)]">
           {profile.bio}
         </p>
       ) : null}

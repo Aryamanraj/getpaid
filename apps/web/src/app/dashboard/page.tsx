@@ -7,11 +7,14 @@ import type {
   BootstrapAsset,
   BootstrapChain,
   BootstrapPayload,
+  MeResponse,
   PaymentRequestView,
+  PresetAmount,
 } from '@recv/shared';
 import { api, currentHost, tokenStore } from '@/lib/api';
 import { signOut, useMe } from '@/lib/use-auth';
 import { shortAddress } from '@/lib/format';
+import { accentFor, hueFromSeed } from '@/lib/avatar';
 import {
   Button,
   Card,
@@ -226,6 +229,10 @@ export default function DashboardPage() {
           domains={bootstrap ? [bootstrap.domain] : []}
         />
       </div>
+
+      {methods ? (
+        <PageStyleSection me={me} accepted={methods.acceptedAssets} onSaved={reload} />
+      ) : null}
 
       {bootstrap && methods ? (
         <PayoutSection
@@ -795,6 +802,199 @@ function HistorySection({ items }: { items: PaymentRequestView[] }) {
           ))}
         </ul>
       )}
+    </Card>
+  );
+}
+
+const SWATCH_HUES = [15, 45, 90, 150, 195, 230, 270, 320];
+
+function PageStyleSection({
+  me,
+  accepted,
+  onSaved,
+}: {
+  me: MeResponse;
+  accepted: AcceptedRow[];
+  onSaved: () => void;
+}) {
+  const [presets, setPresets] = useState<PresetAmount[]>(
+    me.presetAmounts ?? [],
+  );
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const autoHue = hueFromSeed(me.userName ?? '');
+  const currentHue = me.accentHue;
+
+  const assetOptions = [
+    ...new Map(
+      accepted
+        .filter((a) => a.isActive)
+        .map((a) => [a.assetId, a] as const),
+    ).values(),
+  ];
+
+  async function save(body: {
+    accentHue?: number | null;
+    presetAmounts?: PresetAmount[];
+  }) {
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await api('/user/updateProfile', { method: 'PATCH', auth: true, body });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+      onSaved();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mt-6">
+      <h2 className="text-[15px] font-semibold tracking-tight">Your page</h2>
+      <Muted className="mt-1">
+        The colour and quick amounts people see on your pay page.
+      </Muted>
+
+      <div className="mt-4">
+        <p className="mb-2 text-sm font-medium">Accent</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-label="Automatic colour"
+            aria-pressed={currentHue === undefined}
+            disabled={busy}
+            onClick={() => save({ accentHue: null })}
+            className={`grid h-9 w-9 place-items-center rounded-full border-2 border-dashed text-[10px] font-semibold uppercase transition-transform duration-200 active:scale-90 ${
+              currentHue === undefined
+                ? 'border-[color:var(--color-foreground)]'
+                : 'border-[color:var(--color-border-strong)]'
+            }`}
+            style={{ color: accentFor(me.userName ?? '').strong }}
+          >
+            auto
+          </button>
+          {SWATCH_HUES.map((h) => (
+            <button
+              key={h}
+              type="button"
+              aria-label={`Hue ${h}`}
+              aria-pressed={currentHue === h}
+              disabled={busy}
+              onClick={() => save({ accentHue: h })}
+              className={`h-9 w-9 rounded-full transition-transform duration-200 active:scale-90 ${
+                currentHue === h
+                  ? 'ring-2 ring-[color:var(--color-foreground)] ring-offset-2 ring-offset-[color:var(--color-surface)]'
+                  : ''
+              }`}
+              style={{ background: `oklch(60% 0.15 ${h})` }}
+            />
+          ))}
+        </div>
+        <Muted className="mt-2 text-xs">
+          Colours your monogram, pay button, and highlights. Auto derives one
+          from your username{me.userName ? ` (hue ${autoHue})` : ''}.
+        </Muted>
+      </div>
+
+      <div className="mt-5 border-t border-[color:var(--color-border)] pt-4">
+        <p className="mb-2 text-sm font-medium">Quick amounts</p>
+        {assetOptions.length === 0 ? (
+          <Muted>Add a payout address first, then set quick amounts.</Muted>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {presets.map((p, i) => (
+              <div
+                key={`${p.assetId}:${i}`}
+                className="flex items-center gap-2"
+              >
+                <Input
+                  aria-label="Amount"
+                  inputMode="decimal"
+                  value={p.amount}
+                  onChange={(e) =>
+                    setPresets((rows) =>
+                      rows.map((r, j) =>
+                        j === i
+                          ? {
+                              ...r,
+                              amount: e.target.value.replace(/[^\d.]/g, ''),
+                            }
+                          : r,
+                      ),
+                    )
+                  }
+                  className="tabular max-w-28 font-mono text-sm"
+                />
+                <select
+                  aria-label="Asset"
+                  value={p.assetId}
+                  onChange={(e) =>
+                    setPresets((rows) =>
+                      rows.map((r, j) =>
+                        j === i
+                          ? { ...r, assetId: Number(e.target.value) }
+                          : r,
+                      ),
+                    )
+                  }
+                  className="min-h-11 flex-1 rounded-[var(--radius)] border border-[color:var(--color-border)] bg-transparent px-3 text-sm"
+                >
+                  {assetOptions.map((a) => (
+                    <option key={a.assetId} value={a.assetId}>
+                      {a.symbol} · {a.chainName}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  aria-label="Remove quick amount"
+                  onClick={() =>
+                    setPresets((rows) => rows.filter((_, j) => j !== i))
+                  }
+                  className="text-xs font-medium text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-danger)]"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center gap-3">
+              {presets.length < 4 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPresets((rows) => [
+                      ...rows,
+                      { assetId: assetOptions[0].assetId, amount: '' },
+                    ])
+                  }
+                  className="self-start text-sm text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
+                >
+                  + Add quick amount
+                </button>
+              ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={
+                  busy ||
+                  presets.some((p) => !/^\d+(\.\d+)?$/.test(p.amount))
+                }
+                className="min-h-9 px-3 py-1.5 text-sm"
+                onClick={() => save({ presetAmounts: presets })}
+              >
+                {busy ? 'Saving…' : saved ? 'Saved' : 'Save quick amounts'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      <ErrorText>{error}</ErrorText>
     </Card>
   );
 }

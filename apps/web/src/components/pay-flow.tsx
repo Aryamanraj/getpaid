@@ -7,16 +7,7 @@ import type {
   PublicProfile,
 } from '@recv/shared';
 import { api, currentHost } from '@/lib/api';
-import {
-  Button,
-  Card,
-  CopyButton,
-  ErrorText,
-  Input,
-  Label,
-  Mono,
-  Muted,
-} from '@/components/ui';
+import { Button, ErrorText, Input, Label, Muted } from '@/components/ui';
 import { Qr } from '@/components/qr';
 import {
   StatusBadge,
@@ -25,11 +16,14 @@ import {
   usePaymentRequest,
 } from '@/components/payment-status';
 import { WalletPayButton } from '@/components/wallet-pay';
+import { MicroLabel, MiniCopy, Row } from '@/components/ledger';
+import { shortAddress } from '@/lib/format';
 
 /**
- * The pay page. One column: who you're paying, what they accept, an amount,
- * one primary button. Every state of the flow lives here so the payer never
- * navigates away until they have a receipt.
+ * The pay page. The amount is the hero: a borderless numeral, one selector,
+ * one button. Everything else is disclosed on demand, and every state of the
+ * flow lives here so the payer never navigates away until they have a
+ * receipt. Ledger skin — mono micro-labels, dotted leaders, a slip.
  */
 export function PayFlow({
   profile,
@@ -59,35 +53,31 @@ function RequestForm({
   brandName: string;
   onCreated: (r: PaymentRequestView) => void;
 }) {
-  const grouped = useMemo(() => {
-    const byChain = new Map<
-      number,
-      { name: string; items: ProfileAcceptedAsset[] }
-    >();
-    for (const a of profile.acceptedAssets) {
-      const g = byChain.get(a.chain.chainId) ?? {
-        name: a.chain.name,
-        items: [],
-      };
-      g.items.push(a);
-      byChain.set(a.chain.chainId, g);
-    }
-    return [...byChain.values()];
-  }, [profile.acceptedAssets]);
-
   const [selected, setSelected] = useState<ProfileAcceptedAsset | null>(
     profile.acceptedAssets[0] ?? null,
-  );
-  const [chainId, setChainId] = useState<number | null>(
-    profile.acceptedAssets[0]?.chain.chainId ?? null,
   );
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [payerName, setPayerName] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const presets = useMemo(
+    () =>
+      (profile.presetAmounts ?? [])
+        .map((p) => ({
+          ...p,
+          accepted: profile.acceptedAssets.find(
+            (a) => a.asset.assetId === p.assetId,
+          ),
+        }))
+        .filter((p) => p.accepted),
+    [profile.presetAmounts, profile.acceptedAssets],
+  );
+
   const amountOk = /^\d+(\.\d+)?$/.test(amount) && Number(amount) > 0;
+  const payeeName = profile.displayName || profile.userName;
 
   async function create() {
     if (!selected) return;
@@ -116,104 +106,99 @@ function RequestForm({
 
   if (profile.acceptedAssets.length === 0) {
     return (
-      <Card className="mt-8">
-        <Muted>
-          {profile.displayName || profile.userName} hasn't added a way to get
-          paid yet.
-        </Muted>
-      </Card>
+      <div className="slip mt-10 p-5 text-center">
+        <Muted>{payeeName} hasn't added a way to get paid yet.</Muted>
+      </div>
     );
   }
 
   return (
-    <div className="mt-8">
-      <Card elevated className="reveal reveal-1">
-        <form
-          className="flex flex-col gap-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (amountOk && selected) create();
+    <form
+      className="mt-10 flex flex-col"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (amountOk && selected) create();
+      }}
+    >
+      <label htmlFor="amount" className="sr-only">
+        Amount in {selected?.asset.symbol}
+      </label>
+      <input
+        id="amount"
+        inputMode="decimal"
+        autoComplete="off"
+        placeholder="0"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
+        className="tabular w-full [caret-color:var(--color-accent)] border-0 bg-transparent text-center text-[clamp(3.5rem,18vw,5rem)] leading-none font-semibold tracking-tight outline-none placeholder:text-[color:var(--color-border-strong)]"
+      />
+
+      {presets.length > 0 ? (
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+          {presets.map((p) => (
+            <button
+              key={`${p.assetId}:${p.amount}`}
+              type="button"
+              onClick={() => {
+                setAmount(p.amount);
+                if (p.accepted) setSelected(p.accepted);
+              }}
+              className="rounded-full border border-[color:var(--color-border)] px-3 py-1 font-mono text-sm transition-[border-color,background-color] duration-200 hover:border-[color:var(--color-accent)] hover:bg-[color:var(--color-surface)] active:scale-95"
+            >
+              {p.amount} {p.accepted?.asset.symbol}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* One selector: a styled pill with an invisible native <select> on
+          top, so mobile gets the OS picker and a11y comes for free. */}
+      <div className="relative mx-auto mt-5">
+        <div className="pointer-events-none flex items-center gap-2 rounded-full border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface)] px-4 py-2 font-mono text-sm">
+          <span className="font-semibold">{selected?.asset.symbol}</span>
+          <span className="text-[color:var(--color-muted)]">
+            on {selected?.chain.name}
+          </span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className="text-[color:var(--color-muted)]"
+          >
+            <path
+              d="M6 9l6 6 6-6"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <select
+          aria-label="Asset and network"
+          value={selected?.acceptedAssetId ?? ''}
+          onChange={(e) => {
+            const next = profile.acceptedAssets.find(
+              (a) => a.acceptedAssetId === Number(e.target.value),
+            );
+            if (next) setSelected(next);
           }}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         >
-          {/* min-w-0 overrides the fieldset's min-width:min-content default,
-              which otherwise blocks the tab row from scrolling and pushes it
-              out of the card */}
-          <fieldset className="min-w-0">
-            <legend className="mb-2 text-sm font-medium">Network</legend>
-            <div className="flex gap-0.5 overflow-x-auto rounded-full bg-[color:var(--color-background)] p-1">
-              {grouped.map((g) => {
-                const id = g.items[0].chain.chainId;
-                const on = id === chainId;
-                return (
-                  <button
-                    key={g.name}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => {
-                      setChainId(id);
-                      setSelected(g.items[0]);
-                    }}
-                    className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200 ${
-                      on
-                        ? 'bg-[color:var(--color-surface)] text-[color:var(--color-foreground)] [box-shadow:var(--shadow-sm)]'
-                        : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]'
-                    }`}
-                  >
-                    {g.name}
-                  </button>
-                );
-              })}
-            </div>
+          {profile.acceptedAssets.map((a) => (
+            <option key={a.acceptedAssetId} value={a.acceptedAssetId}>
+              {a.asset.symbol} on {a.chain.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {grouped
-                .find((g) => g.items[0].chain.chainId === chainId)
-                ?.items.map((a) => {
-                  const on = selected?.acceptedAssetId === a.acceptedAssetId;
-                  return (
-                    <button
-                      key={a.acceptedAssetId}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => setSelected(a)}
-                      className={`min-h-9 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-out-soft)] active:scale-95 ${
-                        on
-                          ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-accent-foreground)] [box-shadow:var(--shadow-sm)]'
-                          : 'border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-background)]'
-                      }`}
-                    >
-                      {a.asset.symbol}
-                    </button>
-                  );
-                })}
-            </div>
-          </fieldset>
-
+      {showDetails ? (
+        <div className="mt-8 flex flex-col gap-4">
           <div>
-            <Label htmlFor="amount">Amount</Label>
-            <div className="relative">
-              <Input
-                id="amount"
-                inputMode="decimal"
-                autoComplete="off"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) =>
-                  setAmount(e.target.value.replace(/[^\d.]/g, ''))
-                }
-                className="tabular min-h-14 pr-16 text-3xl font-semibold tracking-tight"
-              />
-              {selected ? (
-                <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-lg font-medium text-[color:var(--color-muted)]">
-                  {selected.asset.symbol}
-                </span>
-              ) : null}
-            </div>
-            <Muted className="mt-1.5">No fiat conversion.</Muted>
-          </div>
-
-          <div>
-            <Label htmlFor="note">Note (optional)</Label>
+            <Label htmlFor="note">Note</Label>
             <Input
               id="note"
               maxLength={140}
@@ -222,9 +207,8 @@ function RequestForm({
               placeholder="What this is for"
             />
           </div>
-
           <div>
-            <Label htmlFor="payerName">Your name (optional)</Label>
+            <Label htmlFor="payerName">Your name</Label>
             <Input
               id="payerName"
               maxLength={128}
@@ -232,22 +216,29 @@ function RequestForm({
               onChange={(e) => setPayerName(e.target.value)}
             />
           </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowDetails(true)}
+          className="mx-auto mt-6 text-sm text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
+        >
+          + Add a note
+        </button>
+      )}
 
-          <ErrorText>{error}</ErrorText>
-          <Button
-            type="submit"
-            disabled={!amountOk || !selected || busy}
-            className="lift min-h-12 text-base"
-          >
-            {busy ? 'One moment…' : 'Continue'}
-          </Button>
-        </form>
-      </Card>
-      <Muted className="mt-3 text-center text-xs">
-        Funds go straight to {profile.displayName || profile.userName}.{' '}
-        {brandName} never holds them.
-      </Muted>
-    </div>
+      <ErrorText>{error}</ErrorText>
+      <Button
+        type="submit"
+        disabled={!amountOk || !selected || busy}
+        className="mt-8 min-h-13 text-base"
+      >
+        {busy ? 'One moment…' : `Pay ${payeeName}`}
+      </Button>
+      <p className="mt-3 text-center text-xs text-[color:var(--color-muted)]">
+        Straight to {payeeName}'s wallet — {brandName} never holds funds.
+      </p>
+    </form>
   );
 }
 
@@ -285,100 +276,103 @@ function PayPanel({
   }
 
   return (
-    <div className="mt-8 flex flex-col gap-5">
-      <div className="reveal flex items-start justify-between gap-3">
-        <div>
-          <Muted>Send exactly</Muted>
-          <p className="tabular text-4xl font-semibold tracking-tight">
-            {request.amountDisplay}{' '}
-            <span className="text-xl font-medium text-[color:var(--color-muted)]">
-              {request.asset.symbol}
-            </span>
-          </p>
-          <Muted>on {request.chain.name}</Muted>
-        </div>
+    <div className="mt-10 flex flex-col">
+      <div className="flex items-center justify-between">
+        <MicroLabel>Send exactly</MicroLabel>
         <StatusBadge status={request.status} />
       </div>
+      <p className="tabular mt-1 text-center text-[clamp(2.75rem,14vw,4rem)] leading-none font-semibold tracking-tight">
+        {request.amountDisplay}
+      </p>
+      <p className="mt-2 text-center font-mono text-sm text-[color:var(--color-muted)]">
+        {request.asset.symbol} · {request.chain.name}
+      </p>
 
       {awaiting ? (
         <>
-          <div className="reveal reveal-1">
+          <div className="mt-6">
             <WalletPayButton
               request={request}
               onSent={(h) => submit(h, 'wallet')}
             />
           </div>
 
-          <Card
-            elevated
-            className="reveal reveal-2 flex flex-col items-center gap-3"
-          >
+          <div className="slip mt-5 p-5">
             {/* Tron wallets handle URIs inconsistently; the address alone is safer. */}
             <Qr
               value={isTron ? request.toAddress : request.paymentUri}
               label={`QR code to pay ${request.amountDisplay} ${request.asset.symbol}`}
             />
-            <div className="w-full">
-              <Muted className="mb-1">
-                To this address on {request.chain.name}
-              </Muted>
-              <div className="flex items-start justify-between gap-2">
-                <Mono className="tabular text-sm">{request.toAddress}</Mono>
-                <CopyButton value={request.toAddress} />
-              </div>
-            </div>
-            <div className="flex w-full items-center justify-between">
-              <Muted>Amount</Muted>
-              <div className="flex items-center gap-2">
-                <Mono className="tabular text-sm">{request.amountDisplay}</Mono>
-                <CopyButton value={request.amountDisplay} />
-              </div>
-            </div>
-          </Card>
+            <p className="mt-3 text-center font-mono text-xs text-[color:var(--color-muted)]">
+              scan with any wallet
+            </p>
 
-          <Card className="reveal reveal-3">
-            {showManual ? (
-              <form
-                className="flex flex-col gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (hash) submit(hash, 'manual');
-                }}
-              >
-                <Label htmlFor="hash">Paste the transaction hash</Label>
-                <Input
-                  id="hash"
-                  value={hash}
-                  onChange={(e) => setHash(e.target.value.trim())}
-                  spellCheck={false}
-                  autoCapitalize="none"
-                  className="font-mono text-sm"
-                />
-                <ErrorText>{error}</ErrorText>
-                <Button type="submit" disabled={busy || !hash}>
-                  {busy ? 'Checking…' : 'Verify payment'}
-                </Button>
-              </form>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowManual(true)}
-                className="w-full text-left text-sm"
-              >
-                <span className="font-medium">
-                  Already sent from another wallet?
+            <div className="tear mt-4 flex flex-col gap-2.5 pt-4">
+              <Row label="To">
+                <span className="truncate" title={request.toAddress}>
+                  {shortAddress(request.toAddress, 10, 8)}
                 </span>
-                <Muted>Paste the transaction hash and we'll verify it.</Muted>
-              </button>
-            )}
-          </Card>
+                <MiniCopy value={request.toAddress} label="address" />
+              </Row>
+              <Row label="Amount">
+                <span className="tabular">{request.amountDisplay}</span>
+                <MiniCopy value={request.amountDisplay} label="amount" />
+              </Row>
+              <Row label="Network">{request.chain.name}</Row>
+            </div>
+          </div>
+
+          {showManual ? (
+            <form
+              className="mt-5 flex flex-col gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (hash) submit(hash, 'manual');
+              }}
+            >
+              <Label htmlFor="hash">Transaction hash</Label>
+              <Input
+                id="hash"
+                value={hash}
+                onChange={(e) => setHash(e.target.value.trim())}
+                spellCheck={false}
+                autoCapitalize="none"
+                className="font-mono text-sm"
+              />
+              <ErrorText>{error}</ErrorText>
+              <Button type="submit" disabled={busy || !hash}>
+                {busy ? 'Checking…' : 'Verify payment'}
+              </Button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowManual(true)}
+              className="mx-auto mt-5 text-sm text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
+            >
+              Already sent? Paste the transaction hash
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onReset}
+            className="mx-auto mt-3 text-xs text-[color:var(--color-muted)] underline underline-offset-2"
+          >
+            Change amount or asset
+          </button>
         </>
       ) : (
-        <Card>
+        <div className="slip relative mt-6 p-5">
+          {request.status === 'confirmed' ? (
+            <span className="stamp absolute -top-3 right-4 bg-[color:var(--color-surface)] text-[color:var(--color-success)]">
+              Verified on-chain
+            </span>
+          ) : null}
           <StatusHint request={request} />
           <TransactionDetails request={request} />
           {request.status === 'confirmed' ? (
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4">
               <a
                 href={`/r/${request.publicId}`}
                 className="inline-flex min-h-10 items-center rounded-[var(--radius)] bg-[color:var(--color-accent)] px-4 text-sm font-medium text-[color:var(--color-accent-foreground)]"
@@ -387,18 +381,8 @@ function PayPanel({
               </a>
             </div>
           ) : null}
-        </Card>
+        </div>
       )}
-
-      {awaiting ? (
-        <button
-          type="button"
-          onClick={onReset}
-          className="self-start text-sm text-[color:var(--color-muted)] underline"
-        >
-          Change amount or asset
-        </button>
-      ) : null}
       <ErrorText>{!showManual ? error : null}</ErrorText>
     </div>
   );

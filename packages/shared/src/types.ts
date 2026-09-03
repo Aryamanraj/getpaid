@@ -87,12 +87,19 @@ export interface AuthIdentitySummary {
   verifiedAt?: string;
 }
 
+export interface PresetAmount {
+  assetId: number;
+  amount: string;
+}
+
 export interface MeResponse {
   userId: number;
   userName?: string;
   displayName?: string;
   bio?: string;
   avatarUrl?: string;
+  accentHue?: number;
+  presetAmounts?: PresetAmount[];
   domainId: number;
   identities: AuthIdentitySummary[];
   createdAt: string;
@@ -119,6 +126,8 @@ export interface PublicProfile {
   displayName?: string;
   bio?: string;
   avatarUrl?: string;
+  accentHue?: number;
+  presetAmounts?: PresetAmount[];
   acceptedAssets: ProfileAcceptedAsset[];
 }
 
