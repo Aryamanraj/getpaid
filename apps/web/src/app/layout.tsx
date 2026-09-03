@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: bootstrap?.domain.tagline ?? 'One link. Any way to pay you.',
     icons: bootstrap?.domain.faviconUrl
       ? [{ url: bootstrap.domain.faviconUrl }]
-      : undefined,
+      : [{ url: '/favicon.ico', type: 'image/png' }],
   };
 }
 
