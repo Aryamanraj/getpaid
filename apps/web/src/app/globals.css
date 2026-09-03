@@ -341,8 +341,18 @@ a {
 }
 
 /* Whisper-subtle dot grid, derived from the theme foreground so it adapts
- * to any domain palette and to dark mode. Fades out toward the bottom. */
+ * to any domain palette and to dark mode. Drawn on its own layer behind the
+ * content — a mask on the element itself would fade the children too. */
 .bg-dots {
+  position: relative;
+  isolation: isolate;
+}
+.bg-dots::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image: radial-gradient(
     color-mix(in srgb, var(--color-foreground) 7%, transparent) 1px,
     transparent 1px

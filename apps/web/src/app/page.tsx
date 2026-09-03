@@ -116,7 +116,7 @@ export default async function HomePage() {
               {supportHandle(bootstrap) ? (
                 <a
                   href={`https://${supportHandle(bootstrap)}.${domain.host}`}
-                  className="underline underline-offset-2 transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
+                  className="font-medium text-[color:var(--color-foreground)] underline underline-offset-2 transition-colors duration-200 hover:text-[color:var(--color-muted)]"
                 >
                   Support the project.
                 </a>
