@@ -61,6 +61,37 @@ export class BlogController {
     makeResponse(res, resStatus, resSuccess, resMessage, resData);
   }
 
+  @Get('getFeed')
+  @ApiOperation({ summary: 'All published summaries — sitemap and RSS' })
+  @ApiQuery({ name: 'host', example: 'recv.to' })
+  @ApiQuery({ name: 'limit', required: false, example: 100 })
+  @ApiOkResponseGeneric({ description: 'Fetched feed', status: HttpStatus.OK })
+  @ApiBadRequestResponse({ description: 'Failed to fetch feed' })
+  async getFeed(
+    @Query('host') host: string,
+    @Query('limit') limit: string,
+    @Res() res: Response,
+  ) {
+    let resStatus = HttpStatus.OK;
+    let resMessage = 'Fetched feed';
+    let resData = null;
+    let resSuccess = true;
+    try {
+      const result = await Promisify<{ items: unknown[] }>(
+        this.blogService.getFeed(host ?? '', Number(limit) || 100),
+      );
+      resData = result;
+    } catch (error) {
+      this.logger.error(
+        `Error in fetching feed [host: ${host}]: ${error.stack}`,
+      );
+      resStatus = error?.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
+      resMessage = `Failed to fetch feed: ${error?.message}`;
+      resSuccess = false;
+    }
+    makeResponse(res, resStatus, resSuccess, resMessage, resData);
+  }
+
   @Get('getPost/:slug')
   @ApiOperation({ summary: 'One published article by slug' })
   @ApiQuery({ name: 'host', example: 'recv.to' })

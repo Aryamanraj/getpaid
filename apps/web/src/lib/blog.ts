@@ -1,4 +1,9 @@
-import type { BlogPost, BlogPostList, BootstrapPayload } from '@recv/shared';
+import type {
+  BlogPost,
+  BlogPostList,
+  BlogPostSummary,
+  BootstrapPayload,
+} from '@recv/shared';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
@@ -26,6 +31,25 @@ export async function getBlogPosts(
     );
     const body = (await res.json()) as { success: boolean; data: BlogPostList };
     return body.success ? body.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getBlogFeed(
+  host: string,
+  limit: number,
+): Promise<BlogPostSummary[] | null> {
+  try {
+    const res = await fetch(
+      `${API_URL}/blog/getFeed?host=${encodeURIComponent(host)}&limit=${limit}`,
+      { next: { revalidate: REVALIDATE } },
+    );
+    const body = (await res.json()) as {
+      success: boolean;
+      data: { items: BlogPostSummary[] };
+    };
+    return body.success ? body.data.items : null;
   } catch {
     return null;
   }

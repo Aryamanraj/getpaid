@@ -31,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = await getHost();
   const bootstrap = await getBootstrap(host);
   return {
+    metadataBase: new URL(`https://${host}`),
     title: bootstrap?.domain.brandName ?? 'payee.id',
     description: bootstrap?.domain.tagline ?? 'One link. Any way to pay you.',
     icons: bootstrap?.domain.faviconUrl

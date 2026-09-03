@@ -23,6 +23,10 @@ export async function generateMetadata({
   return {
     title: `${post.title} · ${bootstrap.domain.brandName}`,
     description: post.metaDescription || post.excerpt,
+    alternates: {
+      canonical: `/blog/${post.slug}`,
+      types: { 'application/rss+xml': '/blog/rss.xml' },
+    },
     openGraph: {
       title: post.title,
       description: post.metaDescription || post.excerpt,
@@ -43,8 +47,31 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = await getBlogPost(host, slug);
   if (!post) notFound();
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: post.title,
+    description: post.metaDescription || post.excerpt,
+    datePublished: post.publishedAt,
+    dateModified: post.publishedAt,
+    image: post.heroImageUrl ? [post.heroImageUrl] : undefined,
+    mainEntityOfPage: `https://${host}/blog/${post.slug}`,
+    author: { '@type': 'Organization', name: bootstrap.domain.brandName },
+    publisher: {
+      '@type': 'Organization',
+      name: bootstrap.domain.brandName,
+      url: `https://${host}`,
+    },
+    keywords: post.tags.join(', '),
+  };
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-5 py-12 sm:px-6 sm:py-16">
+      <script
+        type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: first-party JSON-LD, serialised from our own data
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <nav className="flex items-center justify-between">
         <Link
           href="/blog"

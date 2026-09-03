@@ -46,6 +46,9 @@ export async function generateMetadata({
   const name = profile.displayName || profile.userName;
   return {
     title: `Pay ${name} · ${bootstrap.domain.brandName}`,
+    alternates: {
+      canonical: `https://${profile.userName}.${bootstrap.domain.host}`,
+    },
     description:
       profile.bio || `Pay ${name} in crypto — one link, no account needed.`,
     openGraph: {

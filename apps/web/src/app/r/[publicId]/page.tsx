@@ -7,6 +7,9 @@ import { Receipt } from '@/components/receipt';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
+// Receipts are shareable but private-by-obscurity — never indexed.
+export const metadata = { robots: { index: false, follow: false } };
+
 async function getRequest(
   publicId: string,
 ): Promise<PaymentRequestView | null> {

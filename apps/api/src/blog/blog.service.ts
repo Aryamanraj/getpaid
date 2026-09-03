@@ -100,6 +100,38 @@ export class BlogService {
     }
   }
 
+  /** Every published summary, newest first — feeds the sitemap and RSS. */
+  async getFeed(host: string, limit: number): Promise<ResultWithError> {
+    try {
+      this.logger.info(`[BlogService.getFeed] host ${host} limit ${limit}`);
+      await Promisify<boolean>(this.assertEnabled(host));
+
+      const articles = await Promisify<BlogArticle[]>(
+        this.blogArticleRepo.getAll(
+          {
+            where: {
+              Status: 'published',
+              PublishedAt: LessThanOrEqual(new Date()),
+            },
+            order: { PublishedAt: 'DESC' },
+            take: Math.min(Math.max(1, limit || 100), 5000),
+          },
+          false,
+        ),
+      );
+
+      return {
+        data: { items: (articles ?? []).map((a) => this.toSummary(a)) },
+        error: null,
+      };
+    } catch (error) {
+      this.logger.error(
+        `[BlogService.getFeed] error for ${host}: ${error.stack}`,
+      );
+      return { data: null, error };
+    }
+  }
+
   async getPost(host: string, slug: string): Promise<ResultWithError> {
     try {
       this.logger.info(`[BlogService.getPost] host ${host} slug ${slug}`);

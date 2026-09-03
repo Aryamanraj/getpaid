@@ -12,6 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `Blog · ${bootstrap.domain.brandName}`,
     description: `News and analysis from ${bootstrap.domain.brandName}.`,
+    alternates: {
+      canonical: '/blog',
+      types: { 'application/rss+xml': '/blog/rss.xml' },
+    },
   };
 }
 
