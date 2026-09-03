@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type {
@@ -231,7 +231,11 @@ export default function DashboardPage() {
       </div>
 
       {methods ? (
-        <PageStyleSection me={me} accepted={methods.acceptedAssets} onSaved={reload} />
+        <PageStyleSection
+          me={me}
+          accepted={methods.acceptedAssets}
+          onSaved={reload}
+        />
       ) : null}
 
       {bootstrap && methods ? (
@@ -817,9 +821,10 @@ function PageStyleSection({
   accepted: AcceptedRow[];
   onSaved: () => void;
 }) {
-  const [presets, setPresets] = useState<PresetAmount[]>(
-    me.presetAmounts ?? [],
+  const [presets, setPresets] = useState<Array<PresetAmount & { id: number }>>(
+    () => (me.presetAmounts ?? []).map((preset, i) => ({ ...preset, id: i })),
   );
+  const nextId = useRef((me.presetAmounts ?? []).length);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -829,9 +834,7 @@ function PageStyleSection({
 
   const assetOptions = [
     ...new Map(
-      accepted
-        .filter((a) => a.isActive)
-        .map((a) => [a.assetId, a] as const),
+      accepted.filter((a) => a.isActive).map((a) => [a.assetId, a] as const),
     ).values(),
   ];
 
@@ -909,10 +912,7 @@ function PageStyleSection({
         ) : (
           <div className="flex flex-col gap-2">
             {presets.map((p, i) => (
-              <div
-                key={`${p.assetId}:${i}`}
-                className="flex items-center gap-2"
-              >
+              <div key={p.id} className="flex items-center gap-2">
                 <Input
                   aria-label="Amount"
                   inputMode="decimal"
@@ -937,9 +937,7 @@ function PageStyleSection({
                   onChange={(e) =>
                     setPresets((rows) =>
                       rows.map((r, j) =>
-                        j === i
-                          ? { ...r, assetId: Number(e.target.value) }
-                          : r,
+                        j === i ? { ...r, assetId: Number(e.target.value) } : r,
                       ),
                     )
                   }
@@ -970,7 +968,11 @@ function PageStyleSection({
                   onClick={() =>
                     setPresets((rows) => [
                       ...rows,
-                      { assetId: assetOptions[0].assetId, amount: '' },
+                      {
+                        assetId: assetOptions[0].assetId,
+                        amount: '',
+                        id: nextId.current++,
+                      },
                     ])
                   }
                   className="self-start text-sm text-[color:var(--color-muted)] transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
@@ -982,11 +984,14 @@ function PageStyleSection({
                 type="button"
                 variant="ghost"
                 disabled={
-                  busy ||
-                  presets.some((p) => !/^\d+(\.\d+)?$/.test(p.amount))
+                  busy || presets.some((p) => !/^\d+(\.\d+)?$/.test(p.amount))
                 }
                 className="min-h-9 px-3 py-1.5 text-sm"
-                onClick={() => save({ presetAmounts: presets })}
+                onClick={() =>
+                  save({
+                    presetAmounts: presets.map(({ id: _id, ...rest }) => rest),
+                  })
+                }
               >
                 {busy ? 'Saving…' : saved ? 'Saved' : 'Save quick amounts'}
               </Button>

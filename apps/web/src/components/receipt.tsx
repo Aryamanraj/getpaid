@@ -85,8 +85,8 @@ export function Receipt({
 
         {tx?.status === 'pending' ? (
           <Muted className="mt-4 font-mono text-xs">
-            {tx.confirmations} / {tx.requiredConfirmations} confirmations —
-            this page updates by itself.
+            {tx.confirmations} / {tx.requiredConfirmations} confirmations — this
+            page updates by itself.
           </Muted>
         ) : null}
         {tx?.mismatchReason ? (
