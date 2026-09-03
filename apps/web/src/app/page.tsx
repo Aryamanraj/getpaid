@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBootstrap, getHost } from '@/lib/bootstrap';
 import { blogEnabled } from '@/lib/blog';
+import { supportHandle } from '@/components/support-card';
 import { ClaimForm } from '@/components/claim-form';
 import { HomeNav } from '@/components/home-nav';
 
@@ -111,7 +112,15 @@ export default async function HomePage() {
                 className="underline underline-offset-2 transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
               >
                 Source-available.
-              </Link>
+              </Link>{' '}
+              {supportHandle(bootstrap) ? (
+                <a
+                  href={`https://${supportHandle(bootstrap)}.${domain.host}`}
+                  className="underline underline-offset-2 transition-colors duration-200 hover:text-[color:var(--color-foreground)]"
+                >
+                  Support the project.
+                </a>
+              ) : null}
             </Point>
           </ul>
         </div>

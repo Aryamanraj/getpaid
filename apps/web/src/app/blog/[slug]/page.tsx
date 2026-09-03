@@ -5,6 +5,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getBootstrap, getHost } from '@/lib/bootstrap';
 import { blogEnabled, formatBlogDate, getBlogPost } from '@/lib/blog';
+import { SupportCard, supportHandle } from '@/components/support-card';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -128,6 +129,14 @@ export default async function BlogPostPage({ params }: PageProps) {
               ))}
             </ul>
           </footer>
+        ) : null}
+
+        {supportHandle(bootstrap) ? (
+          <SupportCard
+            handle={supportHandle(bootstrap) as string}
+            host={host}
+            brandName={bootstrap.domain.brandName}
+          />
         ) : null}
       </article>
 

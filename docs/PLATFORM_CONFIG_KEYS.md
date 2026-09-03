@@ -134,6 +134,12 @@ separate publish step.
 | `blog.enabledHosts` | string[] | | ✅ | `["recv.to"]` | Hosts whose `/blog` is live. Others 404 |
 | `blog.indexNowKey` | string | | ✅ | `""` | IndexNow key served at `/indexnow.txt`; the same value goes in newsmith's `publish.indexnow_key`. Empty = off |
 
+## support
+
+| Key | Type | Secret | Public | Default | Description |
+|---|---|:-:|:-:|---|---|
+| `support.handle` | string | | ✅ | `""` | Username whose pay page collects donations; linked as Support on the landing footer and under blog articles. Empty = hidden |
+
 ## rateLimit
 
 | Key | Type | Secret | Public | Default | Description |
