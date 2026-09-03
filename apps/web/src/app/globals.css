@@ -103,10 +103,15 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Visible focus for keyboard users on every interactive element. */
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+/* Visible focus for keyboard users on every interactive element. Lives in
+ * the base layer so an explicit `outline-none` utility can opt an element
+ * out when its focus style is drawn by a wrapper (the claim pill, inputs
+ * with box-shadow rings) — unlayered rules would override utilities. */
+@layer base {
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
 }
 
 button,
